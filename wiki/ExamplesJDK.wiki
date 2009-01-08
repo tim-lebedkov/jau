@@ -1,6 +1,4 @@
-#summary One-sentence summary of this page.
-
-= Examples for equals, hashCode and compareTo from JDK =
+#summary Examples for equals, hashCode and compareTo from JDK.
 
 java.lang.Boolean (could be implemented using JAU: yes):
 
