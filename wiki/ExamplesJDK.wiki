@@ -1,0 +1,16 @@
+#summary One-sentence summary of this page.
+
+= Examples for equals, hashCode and compareTo from JDK =
+
+java.lang.*
+
+{{{
+    private final boolean value;
+
+    public boolean equals(Object obj) {
+	if (obj instanceof Boolean) {
+	    return value == ((Boolean)obj).booleanValue();
+	} 
+	return false;
+    }
+}}}
