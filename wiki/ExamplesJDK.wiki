@@ -2,7 +2,7 @@
 
 = Examples for equals, hashCode and compareTo from JDK =
 
-java.lang.Boolean:
+java.lang.Boolean (could be implemented using JAU: yes):
 
 {{{
     private final boolean value;
