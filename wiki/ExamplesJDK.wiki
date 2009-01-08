@@ -1,6 +1,6 @@
 #summary Examples for equals, hashCode and compareTo from JDK.
 
-java.lang.Boolean (could be implemented using JAU: yes):
+java.lang.Boolean (implementable using JAU: yes):
 
 {{{
     private final boolean value;
