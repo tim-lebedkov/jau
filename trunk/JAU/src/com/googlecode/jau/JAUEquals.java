@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Class with automatic .equals()
+ * Package/class/field used in automatic .equals()
  */
 @Retention(RetentionPolicy.RUNTIME)
 @java.lang.annotation.Target({ElementType.PACKAGE, ElementType.TYPE,

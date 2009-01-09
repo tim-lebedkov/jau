@@ -9,6 +9,31 @@ import java.lang.reflect.Modifier;
  */
 public class JAU {
     /**
+     * Check whether a class is annotated for automatic hashCode() (directly
+     * or through a package).
+     *
+     * @param c a class
+     * @return true = the class can be used for automatic hashCode()
+     */
+    private static boolean annotatedForHashCode(Class c) {
+        // firstly, check package annotation
+        Package p = c.getPackage();
+        boolean include = false;
+        if (p != null) {
+            JAUHashCode annotation = p.getAnnotation(JAUHashCode.class);
+            if (annotation != null && annotation.include())
+                include = true;
+        }
+
+        // class annotation is more important if present
+        JAUHashCode annotation = (JAUHashCode) c.getAnnotation(JAUHashCode.class);
+        if (annotation != null)
+            include = annotation.include();
+
+        return include;
+    }
+
+    /**
      * Generates hash code for an object {@link Object#hashCode()}.
      *
      * @param an object or null (17 is returned for null)
@@ -34,25 +59,37 @@ public class JAU {
             return result;
         }
 
-        JAUHashCode eqclass = (JAUHashCode) ca.getAnnotation(
-                JAUHashCode.class);
-        if (eqclass != null && eqclass.include())
-            return hashCodeAnnotated(a, ca, eqclass);
-
-        return a.hashCode();
+        if (annotatedForHashCode(ca))
+            return hashCodeAnnotated(a, ca, 
+                    (JAUHashCode) ca.getAnnotation(JAUHashCode.class));
+        else
+            return a.hashCode();
     }
 
+    /**
+     * Computes hash code for an object annotated by @JAUEquals
+     *
+     * @param a the object
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
+     * @return hash code
+     */
     private static int hashCodeAnnotated(Object a,
             Class ca, JAUHashCode classAnnotation) {
         Field[] fields = ca.getDeclaredFields();
         int result = 11;
         for (Field f: fields) {
-            boolean include = classAnnotation.allFields();
+            boolean include;
+            if (classAnnotation != null)
+                include = classAnnotation.allFields();
+            else
+                include = true;
             JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
             if (an != null)
                 include &= an.include();
 
-            if (an != null || classAnnotation.allFields()) {
+            if (include) {
                 if (Modifier.isPrivate(f.getModifiers()))
                     f.setAccessible(true);
                 try {
@@ -67,19 +104,44 @@ public class JAU {
                 }
             }
         }
-        if (classAnnotation.inherited()) {
-            Class parent = ca.getSuperclass();
-            if (parent == null || parent == Object.class)
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class)
                 return result;
 
-            classAnnotation = (JAUHashCode) parent.getAnnotation(JAUHashCode.class);
-            if (classAnnotation != null && classAnnotation.include())
-                return hashCodeAnnotated(a, parent, classAnnotation);
+            if (annotatedForHashCode(parentClass))
+                return hashCodeAnnotated(a, parentClass,
+                        (JAUHashCode) parentClass.getAnnotation(JAUHashCode.class));
             else
                 return result;
         }
 
         return result;
+    }
+
+    /**
+     * Check whether a class is annotated for automatic equals() (directly
+     * or through a package).
+     *
+     * @param c a class
+     * @return true = the class can be used for automatic equals()
+     */
+    private static boolean annotatedForEquals(Class c) {
+        // firstly, check package annotation
+        Package p = c.getPackage();
+        boolean include = false;
+        if (p != null) {
+            JAUEquals annotation = p.getAnnotation(JAUEquals.class);
+            if (annotation != null && annotation.include())
+                include = true;
+        }
+
+        // class annotation is more important if present
+        JAUEquals annotation = (JAUEquals) c.getAnnotation(JAUEquals.class);
+        if (annotation != null)
+            include = annotation.include();
+
+        return include;
     }
 
     /**
@@ -126,11 +188,11 @@ public class JAU {
             return true;
         }
 
-        JAUEquals eqclass = (JAUEquals) ca.getAnnotation(JAUEquals.class);
-        if (eqclass != null && eqclass.include())
-            return equalsAnnotated(a, b, ca, eqclass);
-
-        return a.equals(b);
+        if (annotatedForEquals(ca))
+            return equalsAnnotated(a, b, ca, 
+                    (JAUEquals) ca.getAnnotation(JAUEquals.class));
+        else
+            return a.equals(b);
     }
 
     /**
@@ -138,15 +200,20 @@ public class JAU {
      *
      * @param a first object
      * @param b second object
-     * @param ca only fields from this class are considered
-     * @param eqclass annotation
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
      * @return true = equals
      */
     private static boolean equalsAnnotated(Object a, Object b,
-            Class ca, JAUEquals eqclass) {
+            Class ca, JAUEquals classAnnotation) {
         Field[] fields = ca.getDeclaredFields();
         for (Field f: fields) {
-            boolean include = eqclass.allFields();
+            boolean include;
+            if (classAnnotation == null)
+                include = true;
+            else
+                include = classAnnotation.allFields();
             JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
             if (an != null)
                 include &= an.include();
@@ -168,14 +235,14 @@ public class JAU {
                 }
             }
         }
-        if (eqclass.inherited()) {
-            Class parent = ca.getSuperclass();
-            if (parent == null || parent == Object.class)
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class)
                 return true;
 
-            eqclass = (JAUEquals) parent.getAnnotation(JAUEquals.class);
-            if (eqclass != null && eqclass.include())
-                return equalsAnnotated(a, b, parent, eqclass);
+            if (annotatedForEquals(parentClass))
+                return equalsAnnotated(a, b, parentClass,
+                        (JAUEquals) parentClass.getAnnotation(JAUEquals.class));
             else
                 return false;
         }
