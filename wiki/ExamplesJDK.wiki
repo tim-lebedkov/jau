@@ -1,7 +1,7 @@
 #summary Examples for equals, hashCode and compareTo from JDK.
 
 java.lang.Boolean (implementable using JAU: yes):
-
+(similar implementations for java.lang.Byte, java.lang.Character
 {{{
     private final boolean value;
 
@@ -10,5 +10,23 @@ java.lang.Boolean (implementable using JAU: yes):
 	    return value == ((Boolean)obj).booleanValue();
 	} 
 	return false;
+    }
+}}}
+
+java.lang.Character.Subset (implementable using JAU:?):
+{{{
+    private String name;
+
+    public final boolean equals(Object obj) {
+        return (this == obj);
+    }
+}}}
+
+java.lang.Double (implementable using JAU: no):
+{{{
+    public boolean equals(Object obj) {
+	return (obj instanceof Double)
+	       && (doubleToLongBits(((Double)obj).value) ==
+		      doubleToLongBits(value));
     }
 }}}
