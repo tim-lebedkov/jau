@@ -1,6 +1,5 @@
 package com.googlecode.jau;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -10,22 +9,15 @@ import java.lang.reflect.Modifier;
  */
 public class JAU {
     /**
-     * Compares 2 objects {@link Object#equals(java.lang.Object)}.
+     * Generates hash code for an object {@link Object#hashCode()}.
      *
-     * @param a first object or null
-     * @param b second object or null
-     * @return
-     *     true, if (a == null) && (b == null)
-     *     false, if (a == null) && (b != null)
-     *     false, if (a != null) && (b == null)
-     *     true, if (a == b)
-     *     false, if (a.getClass() != b.getClass())
-     *     arrays are compared deeply using this method for each element
-     *     for classes annotated with EqualsClass only fields annotated with
-     *         EqualsProperty will be taken into account and compared
-     *     a.equals(b) otherwise
+     * @param an object or null (17 is returned for null)
+     * @return generated hash code. If same fields in a class are marked
+     *     with @JAUEquals and @JAUHashCode, the value returned by this
+     *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
+     *     are consistent.
      */
-    public static long hashCode(Object a) {
+    public static int hashCode(Object a) {
         if (a == null)
             return 17;
 
@@ -34,7 +26,7 @@ public class JAU {
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
 
-            long result = 23;
+            int result = 23;
             for (int i = 0; i < lengtha; i++) {
                 Object ela = Array.get(a, i);
                 result += hashCode(ela) * 29;
@@ -42,20 +34,24 @@ public class JAU {
             return result;
         }
 
-        HashCodeClass eqclass = (HashCodeClass) ca.getAnnotation(
-                HashCodeClass.class);
-        if (eqclass != null)
+        JAUHashCode eqclass = (JAUHashCode) ca.getAnnotation(
+                JAUHashCode.class);
+        if (eqclass != null && eqclass.include())
             return hashCodeAnnotated(a, ca, eqclass);
 
         return a.hashCode();
     }
 
-    private static long hashCodeAnnotated(Object a,
-            Class ca, HashCodeClass classAnnotation) {
+    private static int hashCodeAnnotated(Object a,
+            Class ca, JAUHashCode classAnnotation) {
         Field[] fields = ca.getDeclaredFields();
-        long result = 11;
+        int result = 11;
         for (Field f: fields) {
-            Annotation an = f.getAnnotation(EqualsProperty.class);
+            boolean include = classAnnotation.allFields();
+            JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
+            if (an != null)
+                include &= an.include();
+
             if (an != null || classAnnotation.allFields()) {
                 if (Modifier.isPrivate(f.getModifiers()))
                     f.setAccessible(true);
@@ -76,8 +72,8 @@ public class JAU {
             if (parent == null || parent == Object.class)
                 return result;
 
-            classAnnotation = (HashCodeClass) parent.getAnnotation(HashCodeClass.class);
-            if (classAnnotation != null)
+            classAnnotation = (JAUHashCode) parent.getAnnotation(JAUHashCode.class);
+            if (classAnnotation != null && classAnnotation.include())
                 return hashCodeAnnotated(a, parent, classAnnotation);
             else
                 return result;
@@ -98,7 +94,7 @@ public class JAU {
      *     true, if (a == b)
      *     false, if (a.getClass() != b.getClass())
      *     arrays are compared deeply using this method for each element
-     *     for classes annotated with EqualsClass only fields annotated with
+     *     for classes annotated with JAUEquals only fields annotated with
      *         EqualsProperty will be taken into account and compared
      *     a.equals(b) otherwise
      */
@@ -130,19 +126,32 @@ public class JAU {
             return true;
         }
 
-        EqualsClass eqclass = (EqualsClass) ca.getAnnotation(EqualsClass.class);
-        if (eqclass != null)
+        JAUEquals eqclass = (JAUEquals) ca.getAnnotation(JAUEquals.class);
+        if (eqclass != null && eqclass.include())
             return equalsAnnotated(a, b, ca, eqclass);
 
         return a.equals(b);
     }
 
+    /**
+     * Compares 2 objects annotated by @JAUEquals
+     *
+     * @param a first object
+     * @param b second object
+     * @param ca only fields from this class are considered
+     * @param eqclass annotation
+     * @return true = equals
+     */
     private static boolean equalsAnnotated(Object a, Object b,
-            Class ca, EqualsClass eqclass) {
+            Class ca, JAUEquals eqclass) {
         Field[] fields = ca.getDeclaredFields();
         for (Field f: fields) {
-            Annotation an = f.getAnnotation(EqualsProperty.class);
-            if (an != null || eqclass.allFields()) {
+            boolean include = eqclass.allFields();
+            JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
+            if (an != null)
+                include &= an.include();
+
+            if (include) {
                 if (Modifier.isPrivate(f.getModifiers()))
                     f.setAccessible(true);
                 try {
@@ -162,10 +171,10 @@ public class JAU {
         if (eqclass.inherited()) {
             Class parent = ca.getSuperclass();
             if (parent == null || parent == Object.class)
-                return false;
+                return true;
 
-            eqclass = (EqualsClass) parent.getAnnotation(EqualsClass.class);
-            if (eqclass != null)
+            eqclass = (JAUEquals) parent.getAnnotation(JAUEquals.class);
+            if (eqclass != null && eqclass.include())
                 return equalsAnnotated(a, b, parent, eqclass);
             else
                 return false;

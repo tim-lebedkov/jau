@@ -1,8 +1,5 @@
 package com.googlecode.jau;
 
-import com.googlecode.jau.EqualsClass;
-import com.googlecode.jau.JAU;
-import com.googlecode.jau.EqualsProperty;
 import static org.junit.Assert.*;
 
 /**
@@ -16,45 +13,42 @@ public class EqualsTest {
         public int value;
     }
 
-    @EqualsClass
+    @JAUEquals
     private static final class Empty {
     }
 
-    @EqualsClass
+    @JAUEquals
+    private static final class IncludeFalse {
+        @JAUEquals(include=false)
+        public int value;
+    }
+
+    @JAUEquals
     private static final class OneField {
         public int value;
     }
 
-    @EqualsClass
-    private static final class OneField2 {
-        @EqualsProperty
-        public int value;
-    }
-
-    @EqualsClass
+    @JAUEquals
     private static final class ArrayField {
-        @EqualsProperty
         public int[] value;
     }
 
-    @EqualsClass
+    @JAUEquals
     private static final class PrivateField {
-        @EqualsProperty
         private int value;
     }
 
-    @EqualsClass
+    @JAUEquals
     private static final class ProtectedField {
-        @EqualsProperty
         protected int value;
     }
 
-    @EqualsClass(allFields=true)
+    @JAUEquals
     private static class AllFields {
         protected int value;
     }
 
-    @EqualsClass(allFields=true, inherited=true)
+    @JAUEquals
     private static final class AllFields2 extends AllFields {
         protected int value2;
     }
@@ -67,7 +61,7 @@ public class EqualsTest {
     }
 
     @org.junit.Test
-    public void oneField() {
+    public void oneFieldNoAnnotation() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation(),
                 b = new OneFieldNoAnnotation();
         assertFalse(JAU.equals(a, b));
@@ -87,16 +81,16 @@ public class EqualsTest {
     }
 
     @org.junit.Test
-    public void oneFieldEq() {
-        OneField a = new OneField(), b = new OneField();
+    public void includeFalse() {
+        IncludeFalse a = new IncludeFalse(), b = new IncludeFalse();
         a.value = 0;
         b.value = 1;
         assertTrue(JAU.equals(a, b));
     }
 
     @org.junit.Test
-    public void oneFieldEq2() {
-        OneField2 a = new OneField2(), b = new OneField2();
+    public void oneField() {
+        OneField a = new OneField(), b = new OneField();
         assertTrue(JAU.equals(a, b));
         a.value = 0;
         b.value = 1;
@@ -114,6 +108,9 @@ public class EqualsTest {
 
         a.value = new int[] {0};
         b.value = new int[] {1};
+        assertFalse(JAU.equals(a, b));
+
+        a.value = null;
         assertFalse(JAU.equals(a, b));
     }
 
