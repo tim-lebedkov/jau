@@ -13,7 +13,7 @@ java.lang.Boolean (implementable using JAU: yes):
     }
 }}}
 
-java.lang.Character.Subset (implementable using JAU:?):
+java.lang.Character.Subset (implementable using JAU:no):
 {{{
     private String name;
 
