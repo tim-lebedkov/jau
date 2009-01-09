@@ -81,7 +81,7 @@ implementable using JAU: no
 
 *java.lang.Constructor*
 
-implementable using JAU: yes
+implementable using JAU: no
 {{{
     public boolean equals(Object obj) {
 	if (obj != null && obj instanceof Constructor) {
@@ -98,6 +98,21 @@ implementable using JAU: yes
 		    return true;
 		}
 	    }
+	}
+	return false;
+    }
+}}}
+
+*java.lang.Field*
+
+implementable using JAU: no
+{{{
+    public boolean equals(Object obj) {
+	if (obj != null && obj instanceof Field) {
+	    Field other = (Field)obj;
+	    return (getDeclaringClass() == other.getDeclaringClass())
+                && (getName() == other.getName())
+		&& (getType() == other.getType());
 	}
 	return false;
     }
