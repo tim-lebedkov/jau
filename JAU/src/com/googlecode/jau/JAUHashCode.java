@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Class with automatic .hashCode()
+ * Package/class/field used in automatic .hashCode()
  */
 @Retention(RetentionPolicy.RUNTIME)
 @java.lang.annotation.Target({ElementType.PACKAGE, ElementType.TYPE,

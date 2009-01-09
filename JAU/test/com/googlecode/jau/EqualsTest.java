@@ -1,5 +1,6 @@
 package com.googlecode.jau;
 
+import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import static org.junit.Assert.*;
 
 /**
@@ -157,6 +158,18 @@ public class EqualsTest {
         b.value = 0;
         a.value2 = 1;
         b.value2 = 2;
+        assertFalse(JAU.equals(a, b));
+    }
+
+    @org.junit.Test
+    public void annotatedThroughPackage() {
+        EqualsAnnotatedThroughPackage a = new EqualsAnnotatedThroughPackage();
+        EqualsAnnotatedThroughPackage b = new EqualsAnnotatedThroughPackage();
+
+        assertTrue(JAU.equals(a, b));
+
+        a.value = 0;
+        b.value = 1;
         assertFalse(JAU.equals(a, b));
     }
 }
