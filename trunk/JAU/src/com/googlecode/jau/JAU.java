@@ -80,6 +80,9 @@ public class JAU {
         Field[] fields = ca.getDeclaredFields();
         int result = 11;
         for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()))
+                continue;
+
             boolean include;
             if (classAnnotation != null)
                 include = classAnnotation.allFields();
@@ -209,6 +212,9 @@ public class JAU {
             Class ca, JAUEquals classAnnotation) {
         Field[] fields = ca.getDeclaredFields();
         for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()))
+                continue;
+            
             boolean include;
             if (classAnnotation == null)
                 include = true;
