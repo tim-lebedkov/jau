@@ -3,11 +3,73 @@ package com.googlecode.jau;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Annotation based implementation of common methods.
  */
 public class JAU {
+    private static final Map<String, String> reverseAbbreviationMap =
+            new HashMap<String, String>();
+
+    static {
+        reverseAbbreviationMap.put("I", "int");
+        reverseAbbreviationMap.put("Z", "boolean");
+        reverseAbbreviationMap.put("F", "float");
+        reverseAbbreviationMap.put("J", "long");
+        reverseAbbreviationMap.put("S", "short");
+        reverseAbbreviationMap.put("B", "byte");
+        reverseAbbreviationMap.put("D", "double");
+        reverseAbbreviationMap.put("C", "char");
+    }
+    
+    /**
+     * // Copied from Apache Commons
+     *
+     * <p>Converts a given name of class into canonical format.
+     * If name of class is not a name of array class it returns
+     * unchanged name.</p>
+     * <p>Example:
+     * <ul>
+     * <li><code>getCanonicalName("[I") = "int[]"</code></li>
+     * <li><code>getCanonicalName("[Ljava.lang.String;") = "java.lang.String[]"</code></li>
+     * <li><code>getCanonicalName("java.lang.String") = "java.lang.String"</code></li>
+     * </ul>
+     * </p>
+     *
+     * @param className the name of class
+     * @return canonical form of class name
+     */
+    private static String getCanonicalName(String className) {
+        int dim = 0;
+        while(className.startsWith("[")) {
+            dim++;
+            className = className.substring(1);
+        }
+        if(dim < 1) {
+            return className;
+        } else {
+            if(className.startsWith("L")) {
+                className = className.substring(
+                    1,
+                    className.endsWith(";")
+                        ? className.length() - 1
+                        : className.length());
+            } else {
+                if(className.length() > 0) {
+                    className = (String) reverseAbbreviationMap.get(
+                        className.substring(0, 1));
+                }
+            }
+            StringBuffer canonicalClassNameBuffer = new StringBuffer(className);
+            for(int i = 0; i < dim; i++) {
+                canonicalClassNameBuffer.append("[]");
+            }
+            return canonicalClassNameBuffer.toString();
+        }
+    }
+
     /**
      * Check whether a class is annotated for automatic hashCode() (directly
      * or through a package).
@@ -309,5 +371,143 @@ public class JAU {
         }
 
         return true;
+    }
+
+    /**
+     * Check whether a class is annotated for automatic toString() (directly
+     * or through a package).
+     *
+     * @param c a class
+     * @return true = the class can be used for automatic toString()
+     */
+    private static boolean annotatedForToString(Class c) {
+        // firstly, check package annotation
+        Package p = c.getPackage();
+        boolean include = false;
+        if (p != null) {
+            JAUToString annotation = p.getAnnotation(JAUToString.class);
+            if (annotation != null && annotation.include())
+                include = true;
+        }
+
+        // class annotation is more important if present
+        JAUToString annotation = (JAUToString) c.getAnnotation(JAUToString.class);
+        if (annotation != null)
+            include = annotation.include();
+
+        return include;
+    }
+
+    /**
+     * Generates hash code for an object {@link Object#hashCode()}. Classes
+     * should be annotated using @JAUHashCode (directly or through the
+     * corresponding package) for automatic computation of hash code
+     * via reflection.
+     *
+     * Static and synthetic fields will be ignored.
+     *
+     * @param an object or null
+     * @return generated hash code. If same fields in a class are marked
+     *     with @JAUEquals and @JAUHashCode, the value returned by this
+     *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
+     *     are consistent.
+     */
+    public static String toString(Object a) {
+        if (a == null)
+            return "null";
+
+        Class ca = a.getClass();
+
+        if (ca.isArray()) {
+            int lengtha = Array.getLength(a);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(getCanonicalName(
+                    ca.getComponentType().getName())).append("[");
+            for (int i = 0; i < lengtha; i++) {
+                if (i != 0)
+                    sb.append(", ");
+                Object ela = Array.get(a, i);
+                sb.append(toString(ela));
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+
+        if (ca == String.class)
+            return "\"" + a + "\"";
+
+        if (annotatedForToString(ca)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(getCanonicalName(ca.getName())).append("@").
+                    append(Integer.toHexString(
+                    System.identityHashCode(a))).append("(");
+            sb.append(toStringAnnotated(a, ca,
+                    (JAUToString) ca.getAnnotation(JAUToString.class)));
+            sb.append(")");
+            return sb.toString();
+        } else
+            return a.toString();
+    }
+
+    /**
+     * Computes hash code for an object annotated by @JAUToString
+     *
+     * @param a the object
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
+     * @return string representation
+     */
+    private static String toStringAnnotated(Object a,
+            Class ca, JAUToString classAnnotation) {
+        StringBuilder sb = new StringBuilder();
+        Field[] fields = ca.getDeclaredFields();
+        boolean first = true;
+        for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                continue;
+
+            boolean include;
+            if (classAnnotation != null)
+                include = classAnnotation.allFields();
+            else
+                include = true;
+            JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
+            if (an != null)
+                include &= an.include();
+
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()))
+                    f.setAccessible(true);
+                try {
+                    Object fa = f.get(a);
+                    sb.append(f.getName()).append('=').append(toString(fa));
+                    first = false;
+                } catch (IllegalArgumentException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                } catch (IllegalAccessException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                }
+            }
+        }
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class) {
+                // nothing
+            } else {
+                if (annotatedForToString(parentClass)) {
+                    if (!first)
+                        sb.append(", ");
+                    sb.append(toStringAnnotated(a, parentClass,
+                            (JAUToString) parentClass.getAnnotation(
+                            JAUToString.class)));
+                }
+            }
+        }
+
+        return sb.toString();
     }
 }
