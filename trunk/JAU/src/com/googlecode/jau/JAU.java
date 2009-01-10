@@ -34,34 +34,81 @@ public class JAU {
     }
 
     /**
-     * Generates hash code for an object {@link Object#hashCode()}.
+     * Generates hash code for an object {@link Object#hashCode()}. Classes 
+     * should be annotated using @JAUHashCode (directly or through the 
+     * corresponding package) for automatic computation of hash code
+     * via reflection.
      *
-     * @param an object or null (17 is returned for null)
+     * Static and synthetic fields will be ignored.
+     *
+     * @param an object or null
      * @return generated hash code. If same fields in a class are marked
      *     with @JAUEquals and @JAUHashCode, the value returned by this
      *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
      *     are consistent.
      */
     public static int hashCode(Object a) {
+        return hashCode(a, 17, 37);
+    }
+
+    /**
+     * Generates hash code for an object {@link Object#hashCode()}. Classes
+     * should be annotated using @JAUHashCode (directly or through the
+     * corresponding package) for automatic computation of hash code
+     * via reflection.
+     *
+     * Static and synthetic fields will be ignored.
+     *
+     * @param a an object or null
+     * @param initialNonZeroOddNumber
+     *            a non-zero, odd number used as the initial value
+     * @param multiplierNonZeroOddNumber
+     *            a non-zero, odd number used as the multiplier
+     * @return generated hash code. If same fields in a class are marked
+     *     with @JAUEquals and @JAUHashCode, the value returned by this
+     *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
+     *     are consistent.
+     */
+    public static int hashCode(Object a, int initialNonZeroOddNumber,
+            int multiplierNonZeroOddNumber) {
+        if (initialNonZeroOddNumber == 0) {
+            throw new IllegalArgumentException(
+                    "HashCodeBuilder requires a non zero initial value");
+        }
+        if (initialNonZeroOddNumber % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "HashCodeBuilder requires an odd initial value");
+        }
+        if (multiplierNonZeroOddNumber == 0) {
+            throw new IllegalArgumentException(
+                    "HashCodeBuilder requires a non zero multiplier");
+        }
+        if (multiplierNonZeroOddNumber % 2 == 0) {
+            throw new IllegalArgumentException(
+                    "HashCodeBuilder requires an odd multiplier");
+        }
+
         if (a == null)
-            return 17;
+            return initialNonZeroOddNumber * multiplierNonZeroOddNumber;
 
         Class ca = a.getClass();
 
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
 
-            int result = 23;
+            int result = initialNonZeroOddNumber * multiplierNonZeroOddNumber +
+                    ca.hashCode();
             for (int i = 0; i < lengtha; i++) {
                 Object ela = Array.get(a, i);
-                result += hashCode(ela) * 29;
+                result += hashCode(ela) * multiplierNonZeroOddNumber;
             }
             return result;
         }
 
         if (annotatedForHashCode(ca))
             return hashCodeAnnotated(a, ca, 
-                    (JAUHashCode) ca.getAnnotation(JAUHashCode.class));
+                    (JAUHashCode) ca.getAnnotation(JAUHashCode.class),
+                    initialNonZeroOddNumber, multiplierNonZeroOddNumber);
         else
             return a.hashCode();
     }
@@ -73,14 +120,19 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param initialNonZeroOddNumber
+     *            a non-zero, odd number used as the initial value
+     * @param multiplierNonZeroOddNumber
+     *            a non-zero, odd number used as the multiplier
      * @return hash code
      */
     private static int hashCodeAnnotated(Object a,
-            Class ca, JAUHashCode classAnnotation) {
+            Class ca, JAUHashCode classAnnotation, int initialNonZeroOddNumber,
+            int multiplierNonZeroOddNumber) {
         Field[] fields = ca.getDeclaredFields();
-        int result = 11;
+        int result = initialNonZeroOddNumber;
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()))
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
                 continue;
 
             boolean include;
@@ -97,7 +149,7 @@ public class JAU {
                     f.setAccessible(true);
                 try {
                     Object fa = f.get(a);
-                    result += 17 * hashCode(fa);
+                    result += multiplierNonZeroOddNumber * hashCode(fa);
                 } catch (IllegalArgumentException ex) {
                     throw (InternalError) new InternalError(
                             ex.getMessage()).initCause(ex);
@@ -113,8 +165,9 @@ public class JAU {
                 return result;
 
             if (annotatedForHashCode(parentClass))
-                return hashCodeAnnotated(a, parentClass,
-                        (JAUHashCode) parentClass.getAnnotation(JAUHashCode.class));
+                return result + hashCodeAnnotated(a, parentClass,
+                        (JAUHashCode) parentClass.getAnnotation(JAUHashCode.class),
+                        initialNonZeroOddNumber, multiplierNonZeroOddNumber);
             else
                 return result;
         }
@@ -148,7 +201,11 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects {@link Object#equals(java.lang.Object)}.
+     * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
+     * should be annotated using @JAUEquals (directly or through the
+     * corresponding package) to be compared using reflection.
+     *
+     * Static and synthetic fields will be ignored.
      *
      * @param a first object or null
      * @param b second object or null
@@ -164,12 +221,10 @@ public class JAU {
      *     a.equals(b) otherwise
      */
     public static boolean equals(Object a, Object b) {
-        if (a == null && b == null)
+        if (a == b)
             return true;
-        else if (a == null || b == null)
+        if (a == null || b == null)
             return false;
-        else if (a == b)
-            return true;
 
         Class ca = a.getClass();
         Class cb = b.getClass();
@@ -212,7 +267,7 @@ public class JAU {
             Class ca, JAUEquals classAnnotation) {
         Field[] fields = ca.getDeclaredFields();
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()))
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
                 continue;
             
             boolean include;
