@@ -1,6 +1,8 @@
 package com.googlecode.jau;
 
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
+import java.math.BigDecimal;
+import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
@@ -52,6 +54,11 @@ public class EqualsTest {
     @JAUEquals
     private static final class AllFields2 extends AllFields {
         protected int value2;
+    }
+
+    @JAUEquals
+    private static class StaticField {
+        public static Object a = new Object();
     }
 
     @org.junit.Test
@@ -171,5 +178,45 @@ public class EqualsTest {
         a.value = 0;
         b.value = 1;
         assertFalse(JAU.equals(a, b));
+    }
+
+    @Test
+    public void object() {
+        assertFalse(JAU.equals(new Object(), new Object()));
+    }
+
+    @Test
+    public void staticField() {
+        assertTrue(JAU.equals(new StaticField(), new StaticField()));
+    }
+
+    @Test
+    public void doubleEquals() {
+        assertTrue(JAU.equals(new Double(0), new Double(0)));
+        assertFalse(JAU.equals(new Double(1), new Double(1.1)));
+        assertTrue(JAU.equals(new Double(Double.NaN), new Double(Double.NaN)));
+        assertTrue(JAU.equals(new Double(Double.NEGATIVE_INFINITY),
+                new Double(Double.NEGATIVE_INFINITY)));
+        assertFalse(JAU.equals(new Double(Double.POSITIVE_INFINITY),
+                new Double(Double.NEGATIVE_INFINITY)));
+    }
+
+    @Test
+    public void bigDecimal() {
+        assertTrue(JAU.equals(new BigDecimal(0), new BigDecimal(0)));
+        assertFalse(JAU.equals(new BigDecimal(1), new BigDecimal(1.1)));
+    }
+
+    @Test
+    public void array() {
+        assertTrue(JAU.equals(new String[0], new String[0]));
+        assertFalse(JAU.equals(new String[0], new int[0]));
+        assertTrue(JAU.equals(new String[] {"a"}, new String[] {"a"}));
+        assertFalse(JAU.equals(new String[] {"a"}, new String[] {"b"}));
+        assertFalse(JAU.equals(new String[] {"a"}, new String[] {"a", "b"}));
+        assertFalse(JAU.equals(new String[] {"a"}, new String[] {}));
+        assertFalse(JAU.equals(new String[] {"a"}, new String[][] {}));
+        assertTrue(JAU.equals(new String[][] {{"a", "b"}, {"1", "2"}},
+                new String[][] {{"a", "b"}, {"1", "2"}}));
     }
 }
