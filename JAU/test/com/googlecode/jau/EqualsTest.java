@@ -6,9 +6,33 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Tests for JAU
+ * Tests for JAU.equals and hashCode.
  */
 public class EqualsTest {
+    /**
+     * Checks equals() and hashCode() for 2 equal objects.
+     *
+     * @param a first object or null
+     * @param b second object or null
+     */
+    private static void ensureEqual(Object a, Object b) {
+        assertTrue(JAU.equals(a, b));
+        assertEquals(JAU.hashCode(a), JAU.hashCode(b));
+    }
+
+    /**
+     * Checks equals() and hashCode() for 2 equal objects.
+     *
+     * @param a first object or null
+     * @param b second object or null
+     */
+    private static void ensureUnequal(Object a, Object b) {
+        assertFalse(JAU.equals(a, b));
+
+        // for simple tests this should never happen
+        assertFalse(JAU.hashCode(a) == JAU.hashCode(b));
+    }
+
     private static final class EmptyNoAnnotation {
     }
 
@@ -17,46 +41,56 @@ public class EqualsTest {
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class Empty {
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class IncludeFalse {
         @JAUEquals(include=false)
+        @JAUHashCode(include=false)
         public int value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class OneField {
         public int value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class ArrayField {
         public int[] value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class PrivateField {
         private int value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class ProtectedField {
         protected int value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static class AllFields {
         protected int value;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static final class AllFields2 extends AllFields {
         protected int value2;
     }
 
     @JAUEquals
+    @JAUHashCode
     private static class StaticField {
         public static Object a = new Object();
     }
@@ -65,27 +99,27 @@ public class EqualsTest {
     public void empty() {
         EmptyNoAnnotation a = new EmptyNoAnnotation(),
                 b = new EmptyNoAnnotation();
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void oneFieldNoAnnotation() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation(),
                 b = new OneFieldNoAnnotation();
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void diffClasses() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         EmptyNoAnnotation b = new EmptyNoAnnotation();
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void emptyEq() {
         Empty a = new Empty(), b = new Empty();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
     }
 
     @org.junit.Test
@@ -93,79 +127,79 @@ public class EqualsTest {
         IncludeFalse a = new IncludeFalse(), b = new IncludeFalse();
         a.value = 0;
         b.value = 1;
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
     }
 
     @org.junit.Test
     public void oneField() {
         OneField a = new OneField(), b = new OneField();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void arrayField() {
         ArrayField a = new ArrayField(), b = new ArrayField();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = new int[] {0};
         b.value = new int[] {0};
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = new int[] {0};
         b.value = new int[] {1};
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
 
         a.value = null;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void privateField() {
         PrivateField a = new PrivateField(), b = new PrivateField();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void protectedField() {
         ProtectedField a = new ProtectedField(), b = new ProtectedField();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void allFields() {
         AllFields a = new AllFields(), b = new AllFields();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void inherited() {
         AllFields2 a = new AllFields2(), b = new AllFields2();
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
 
         a.value = 0;
         b.value = 0;
         a.value2 = 1;
         b.value2 = 2;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @org.junit.Test
@@ -173,50 +207,59 @@ public class EqualsTest {
         EqualsAnnotatedThroughPackage a = new EqualsAnnotatedThroughPackage();
         EqualsAnnotatedThroughPackage b = new EqualsAnnotatedThroughPackage();
 
-        assertTrue(JAU.equals(a, b));
+        ensureEqual(a, b);
 
         a.value = 0;
         b.value = 1;
-        assertFalse(JAU.equals(a, b));
+        ensureUnequal(a, b);
     }
 
     @Test
     public void object() {
-        assertFalse(JAU.equals(new Object(), new Object()));
+        ensureUnequal(new Object(), new Object());
+        Object a = new Object();
+        ensureEqual(a, a);
     }
 
     @Test
     public void staticField() {
-        assertTrue(JAU.equals(new StaticField(), new StaticField()));
+        ensureEqual(new StaticField(), new StaticField());
     }
 
     @Test
     public void doubleEquals() {
-        assertTrue(JAU.equals(new Double(0), new Double(0)));
-        assertFalse(JAU.equals(new Double(1), new Double(1.1)));
-        assertTrue(JAU.equals(new Double(Double.NaN), new Double(Double.NaN)));
-        assertTrue(JAU.equals(new Double(Double.NEGATIVE_INFINITY),
-                new Double(Double.NEGATIVE_INFINITY)));
-        assertFalse(JAU.equals(new Double(Double.POSITIVE_INFINITY),
-                new Double(Double.NEGATIVE_INFINITY)));
+        ensureEqual(new Double(0), new Double(0));
+        ensureUnequal(new Double(1), new Double(1.1));
+        ensureEqual(new Double(Double.NaN), new Double(Double.NaN));
+        ensureEqual(new Double(Double.NEGATIVE_INFINITY),
+                new Double(Double.NEGATIVE_INFINITY));
+        ensureUnequal(new Double(Double.POSITIVE_INFINITY),
+                new Double(Double.NEGATIVE_INFINITY));
     }
 
     @Test
     public void bigDecimal() {
-        assertTrue(JAU.equals(new BigDecimal(0), new BigDecimal(0)));
-        assertFalse(JAU.equals(new BigDecimal(1), new BigDecimal(1.1)));
+        ensureEqual(new BigDecimal(0), new BigDecimal(0));
+        ensureUnequal(new BigDecimal(1), new BigDecimal(1.1));
     }
 
     @Test
     public void array() {
-        assertTrue(JAU.equals(new String[0], new String[0]));
-        assertFalse(JAU.equals(new String[0], new int[0]));
-        assertTrue(JAU.equals(new String[] {"a"}, new String[] {"a"}));
-        assertFalse(JAU.equals(new String[] {"a"}, new String[] {"b"}));
-        assertFalse(JAU.equals(new String[] {"a"}, new String[] {"a", "b"}));
-        assertFalse(JAU.equals(new String[] {"a"}, new String[] {}));
-        assertFalse(JAU.equals(new String[] {"a"}, new String[][] {}));
-        assertTrue(JAU.equals(new String[][] {{"a", "b"}, {"1", "2"}},
-                new String[][] {{"a", "b"}, {"1", "2"}}));
+        ensureEqual(new String[0], new String[0]);
+        ensureUnequal(new String[0], new int[0]);
+        ensureEqual(new String[] {"a"}, new String[] {"a"});
+        ensureUnequal(new String[] {"a"}, new String[] {"b"});
+        ensureUnequal(new String[] {"a"}, new String[] {"a", "b"});
+        ensureUnequal(new String[] {"a"}, new String[] {});
+        ensureUnequal(new String[] {"a"}, new String[][] {});
+        ensureEqual(new String[][] {{"a", "b"}, {"1", "2"}},
+                new String[][] {{"a", "b"}, {"1", "2"}});
+    }
+
+    @Test
+    public void nulls() {
+        ensureEqual(null, null);
+        ensureUnequal(null, "");
+        ensureUnequal("", null);
     }
 }
