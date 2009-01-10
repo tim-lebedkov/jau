@@ -33,79 +33,17 @@ public class EqualsTest {
         assertFalse(JAU.hashCode(a) == JAU.hashCode(b));
     }
 
-    private static final class EmptyNoAnnotation {
-    }
-
-    private static final class OneFieldNoAnnotation {
-        public int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class Empty {
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class IncludeFalse {
-        @JAUEquals(include=false)
-        @JAUHashCode(include=false)
-        public int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class OneField {
-        public int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class ArrayField {
-        public int[] value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class PrivateField {
-        private int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class ProtectedField {
-        protected int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static class AllFields {
-        protected int value;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static final class AllFields2 extends AllFields {
-        protected int value2;
-    }
-
-    @JAUEquals
-    @JAUHashCode
-    private static class StaticField {
-        public static Object a = new Object();
-    }
-
     @org.junit.Test
     public void empty() {
-        EmptyNoAnnotation a = new EmptyNoAnnotation(),
-                b = new EmptyNoAnnotation();
+        EmptyNoAnnotation a = new EmptyNoAnnotation();
+        EmptyNoAnnotation b = new EmptyNoAnnotation();
         ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void oneFieldNoAnnotation() {
-        OneFieldNoAnnotation a = new OneFieldNoAnnotation(),
-                b = new OneFieldNoAnnotation();
+        OneFieldNoAnnotation a = new OneFieldNoAnnotation();
+        OneFieldNoAnnotation b = new OneFieldNoAnnotation();
         ensureUnequal(a, b);
     }
 
@@ -118,13 +56,15 @@ public class EqualsTest {
 
     @org.junit.Test
     public void emptyEq() {
-        Empty a = new Empty(), b = new Empty();
+        Empty a = new Empty();
+        Empty b = new Empty();
         ensureEqual(a, b);
     }
 
     @org.junit.Test
     public void includeFalse() {
-        IncludeFalse a = new IncludeFalse(), b = new IncludeFalse();
+        IncludeFalse a = new IncludeFalse();
+        IncludeFalse b = new IncludeFalse();
         a.value = 0;
         b.value = 1;
         ensureEqual(a, b);
@@ -132,7 +72,8 @@ public class EqualsTest {
 
     @org.junit.Test
     public void oneField() {
-        OneField a = new OneField(), b = new OneField();
+        OneField a = new OneField();
+        OneField b = new OneField();
         ensureEqual(a, b);
         a.value = 0;
         b.value = 1;
@@ -141,7 +82,8 @@ public class EqualsTest {
 
     @org.junit.Test
     public void arrayField() {
-        ArrayField a = new ArrayField(), b = new ArrayField();
+        ArrayField a = new ArrayField();
+        ArrayField b = new ArrayField();
         ensureEqual(a, b);
 
         a.value = new int[] {0};
@@ -158,17 +100,19 @@ public class EqualsTest {
 
     @org.junit.Test
     public void privateField() {
-        PrivateField a = new PrivateField(), b = new PrivateField();
+        PrivateField a = new PrivateField();
+        PrivateField b = new PrivateField();
         ensureEqual(a, b);
 
-        a.value = 0;
-        b.value = 1;
+        a.setValue(0);
+        b.setValue(1);
         ensureUnequal(a, b);
     }
 
     @org.junit.Test
     public void protectedField() {
-        ProtectedField a = new ProtectedField(), b = new ProtectedField();
+        ProtectedField a = new ProtectedField();
+        ProtectedField b = new ProtectedField();
         ensureEqual(a, b);
 
         a.value = 0;
@@ -178,7 +122,8 @@ public class EqualsTest {
 
     @org.junit.Test
     public void allFields() {
-        AllFields a = new AllFields(), b = new AllFields();
+        AllFields a = new AllFields();
+        AllFields b = new AllFields();
         ensureEqual(a, b);
 
         a.value = 0;
@@ -188,7 +133,8 @@ public class EqualsTest {
 
     @org.junit.Test
     public void inherited() {
-        AllFields2 a = new AllFields2(), b = new AllFields2();
+        AllFields2 a = new AllFields2();
+        AllFields2 b = new AllFields2();
         ensureEqual(a, b);
 
         a.value = 0;
