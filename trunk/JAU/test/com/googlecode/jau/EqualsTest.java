@@ -18,6 +18,7 @@ public class EqualsTest {
     private static void ensureEqual(Object a, Object b) {
         assertTrue(JAU.equals(a, b));
         assertEquals(JAU.hashCode(a), JAU.hashCode(b));
+        assertEquals(0, JAU.compare(a, b));
     }
 
     /**
@@ -31,6 +32,8 @@ public class EqualsTest {
 
         // for simple tests this should never happen
         assertFalse(JAU.hashCode(a) == JAU.hashCode(b));
+
+        assertTrue(JAU.compare(a, b) != 0);
     }
 
     @org.junit.Test
