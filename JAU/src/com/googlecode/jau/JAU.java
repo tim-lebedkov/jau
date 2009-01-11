@@ -405,7 +405,8 @@ public class JAU {
      * a class implements Comparable it's compareTo method is used.
      *
      * Fields in a class are compared from to top bottom (e.g. first field is 
-     * more important for comparison than the second one)
+     * more important for comparison than the second one). Fields from
+     * superclass are more important and will be compared first.
      *
      * Static and synthetic fields will be ignored.
      *
@@ -465,7 +466,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects annotated by @JAUEquals
+     * Compares 2 objects annotated by JAUEquals
      *
      * @param a first object
      * @param b second object
@@ -476,6 +477,21 @@ public class JAU {
      */
     private static int compareAnnotated(Object a, Object b,
             Class ca, JAUCompareTo classAnnotation) {
+        int inheritedCompare = 0;
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class) {
+                // nothing
+            } else {
+                if (annotatedForCompare(parentClass))
+                    inheritedCompare = compareAnnotated(a, b, parentClass,
+                            (JAUCompareTo) parentClass.getAnnotation(
+                            JAUCompareTo.class));
+            }
+        }
+        if (inheritedCompare != 0)
+            return inheritedCompare;
+
         Field[] fields = ca.getDeclaredFields();
         for (Field f: fields) {
             if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
@@ -507,18 +523,6 @@ public class JAU {
                             ex.getMessage()).initCause(ex);
                 }
             }
-        }
-        if (classAnnotation == null || classAnnotation.inherited()) {
-            Class parentClass = ca.getSuperclass();
-            if (parentClass == null || parentClass == Object.class)
-                return 0;
-
-            if (annotatedForCompare(parentClass))
-                return compareAnnotated(a, b, parentClass,
-                        (JAUCompareTo) parentClass.getAnnotation(
-                        JAUCompareTo.class));
-            else
-                return 0;
         }
 
         return 0;
