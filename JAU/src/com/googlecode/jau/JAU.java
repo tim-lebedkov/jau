@@ -374,6 +374,157 @@ public class JAU {
     }
 
     /**
+     * Check whether a class is annotated for automatic equals() (directly
+     * or through a package).
+     *
+     * @param c a class
+     * @return true = the class can be used for automatic equals()
+     */
+    private static boolean annotatedForCompare(Class c) {
+        // firstly, check package annotation
+        Package p = c.getPackage();
+        boolean include = false;
+        if (p != null) {
+            JAUCompareTo annotation = p.getAnnotation(JAUCompareTo.class);
+            if (annotation != null && annotation.include())
+                include = true;
+        }
+
+        // class annotation is more important if present
+        JAUCompareTo annotation = (JAUCompareTo) c.getAnnotation(JAUCompareTo.class);
+        if (annotation != null)
+            include = annotation.include();
+
+        return include;
+    }
+
+    /**
+     * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
+     * should be annotated using JAUCompareTo (directly or through the
+     * corresponding package) to be compared using reflection. Otherwise if
+     * a class implements Comparable it's compareTo method is used.
+     *
+     * Fields in a class are compared from to top bottom (e.g. first field is 
+     * more important for comparison than the second one)
+     *
+     * Static and synthetic fields will be ignored.
+     *
+     * @param a first object or null
+     * @param b second object or null
+     * @return
+     *     < 0, if a < b
+     *     > 0, if a > b
+     *     0, if a = b
+     *
+     *     Special cases:
+     *     0, if (a == null) && (b == null)
+     *     -1, if (a == null) && (b != null)
+     *     1, if (a != null) && (b == null)
+     *     0, if (a == b)
+     *     -1, if (a.getClass() != b.getClass())
+     *     arrays are compared deeply using this method for each element
+     *     for classes annotated with JAUCompareTo only fields annotated with
+     *         JAUCompareTo will be taken into account and compared
+     *     a.compareTo(b) otherwise
+     */
+    public static int compare(Object a, Object b) {
+        if (a == b)
+            return 0;
+        if (a == null)
+            return -1;
+        if (b == null)
+            return 1;
+
+        Class ca = a.getClass();
+        Class cb = b.getClass();
+        if (ca != cb)
+            return -1;
+
+        if (ca.isArray()) {
+            int lengtha = Array.getLength(a);
+            int lengthb = Array.getLength(b);
+
+            for (int i = 0; i < Math.min(lengtha, lengthb); i++) {
+                Object ela = Array.get(a, i);
+                Object elb = Array.get(b, i);
+                int r = compare(ela, elb);
+                if (r != 0)
+                    return r;
+            }
+            return lengtha - lengthb;
+        }
+
+        if (annotatedForCompare(ca))
+            return compareAnnotated(a, b, ca,
+                    (JAUCompareTo) ca.getAnnotation(JAUCompareTo.class));
+        else
+            if (a instanceof Comparable)
+                return ((Comparable) a).compareTo(b);
+            else
+                return -1;
+    }
+
+    /**
+     * Compares 2 objects annotated by @JAUEquals
+     *
+     * @param a first object
+     * @param b second object
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
+     * @return true = equals
+     */
+    private static int compareAnnotated(Object a, Object b,
+            Class ca, JAUCompareTo classAnnotation) {
+        Field[] fields = ca.getDeclaredFields();
+        for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                continue;
+
+            boolean include;
+            if (classAnnotation == null)
+                include = true;
+            else
+                include = classAnnotation.allFields();
+            JAUCompareTo an = (JAUCompareTo) f.getAnnotation(JAUCompareTo.class);
+            if (an != null)
+                include &= an.include();
+
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()))
+                    f.setAccessible(true);
+                try {
+                    Object fa = f.get(a);
+                    Object fb = f.get(b);
+                    int r = compare(fa, fb);
+                    if (r != 0)
+                        return r;
+                } catch (IllegalArgumentException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                } catch (IllegalAccessException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                }
+            }
+        }
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class)
+                return 0;
+
+            if (annotatedForCompare(parentClass))
+                return compareAnnotated(a, b, parentClass,
+                        (JAUCompareTo) parentClass.getAnnotation(
+                        JAUCompareTo.class));
+            else
+                return 0;
+        }
+
+        return 0;
+    }
+
+    /**
      * Check whether a class is annotated for automatic toString() (directly
      * or through a package).
      *

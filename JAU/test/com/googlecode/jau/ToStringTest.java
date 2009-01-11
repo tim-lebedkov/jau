@@ -2,6 +2,7 @@ package com.googlecode.jau;
 
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import java.math.BigDecimal;
+import javax.swing.JFrame;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -150,5 +151,12 @@ public class ToStringTest {
     @Test
     public void null_() {
         assertEquals("null", JAU.toString(null));
+    }
+
+    @Test
+    public void jframe() {
+        String s = JAU.toString(new JFrame());
+        assertTrue(s.startsWith("javax.swing.JFrame["));
+        assertTrue(s.endsWith("]"));
     }
 }
