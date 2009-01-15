@@ -10,15 +10,13 @@ import static org.junit.Assert.*;
  */
 public class EqualsTest {
     /**
-     * Checks equals() and hashCode() for 2 equal objects.
+     * Checks equals(), hashCode() and clone() for 2 equal objects.
      *
      * @param a first object or null
      * @param b second object or null
      */
     private static void ensureEqual(Object a, Object b) {
-        assertTrue(JAU.equals(a, b));
-        assertEquals(JAU.hashCode(a), JAU.hashCode(b));
-        assertEquals(0, JAU.compare(a, b));
+        ensureEqual(a, b, true);
     }
 
     /**
@@ -26,35 +24,70 @@ public class EqualsTest {
      *
      * @param a first object or null
      * @param b second object or null
+     * @param c true = test clone() too
+     */
+    private static void ensureEqual(Object a, Object b, boolean clone) {
+        assertTrue(JAU.equals(a, b));
+        assertEquals(JAU.hashCode(a), JAU.hashCode(b));
+        assertEquals(0, JAU.compare(a, b));
+        if (clone) {
+            assertTrue(JAU.equals(a, JAU.clone(a)));
+            assertTrue(JAU.equals(b, JAU.clone(b)));
+            assertTrue(JAU.equals(a, JAU.clone(b)));
+            assertTrue(JAU.equals(b, JAU.clone(a)));
+        }
+    }
+
+    /**
+     * Checks equals(), hashCode() and clone() for 2 equal objects.
+     *
+     * @param a first object or null
+     * @param b second object or null
      */
     private static void ensureUnequal(Object a, Object b) {
+        ensureUnequal(a, b, true);
+    }
+
+    /**
+     * Checks equals() and hashCode() for 2 equal objects.
+     *
+     * @param a first object or null
+     * @param b second object or null
+     * @param testCopy true = test JAU.clone() too
+     */
+    private static void ensureUnequal(Object a, Object b, boolean testCopy) {
         assertFalse(JAU.equals(a, b));
 
         // for simple tests this should never happen
         assertFalse(JAU.hashCode(a) == JAU.hashCode(b));
 
         assertTrue(JAU.compare(a, b) != 0);
+
+        if (testCopy) {
+            assertFalse(JAU.equals(a, JAU.clone(b)));
+            assertFalse(JAU.equals(b, JAU.clone(a)));
+        }
     }
 
     @org.junit.Test
-    public void empty() {
+    public void emptyNoAnnotation() {
         EmptyNoAnnotation a = new EmptyNoAnnotation();
         EmptyNoAnnotation b = new EmptyNoAnnotation();
-        ensureUnequal(a, b);
+        ensureUnequal(a, b, false);
     }
 
     @org.junit.Test
     public void oneFieldNoAnnotation() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         OneFieldNoAnnotation b = new OneFieldNoAnnotation();
-        ensureUnequal(a, b);
+        ensureUnequal(a, b, false);
     }
 
     @org.junit.Test
     public void diffClasses() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         EmptyNoAnnotation b = new EmptyNoAnnotation();
-        ensureUnequal(a, b);
+        ensureUnequal(a, b, false);
     }
 
     @org.junit.Test
@@ -188,8 +221,8 @@ public class EqualsTest {
 
     @Test
     public void bigDecimal() {
-        ensureEqual(new BigDecimal(0), new BigDecimal(0));
-        ensureUnequal(new BigDecimal(1), new BigDecimal(1.1));
+        ensureEqual(new BigDecimal(0), new BigDecimal(0), false);
+        ensureUnequal(new BigDecimal(1), new BigDecimal(1.1), false);
     }
 
     @Test
