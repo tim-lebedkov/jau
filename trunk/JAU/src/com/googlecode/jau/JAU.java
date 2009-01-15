@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -465,6 +467,8 @@ public class JAU {
      * Double.class
      * Class.class
      * Object.class
+     * BigDecimal.class
+     * BigInteger.class
      * 
      * @param a an object or null
      * @return null, if a == null
@@ -479,7 +483,8 @@ public class JAU {
         Object result;
         if (ca == String.class || ca == Byte.class || ca == Short.class ||
                 ca == Integer.class || ca == Long.class || ca == Float.class ||
-                ca == Double.class || ca == Class.class || ca == Object.class) {
+                ca == Double.class || ca == Class.class || ca == Object.class ||
+                ca == BigDecimal.class || ca == BigInteger.class) {
             result = a;
         } else if (ca.isArray()) {
             result = Array.newInstance(ca.getComponentType(),

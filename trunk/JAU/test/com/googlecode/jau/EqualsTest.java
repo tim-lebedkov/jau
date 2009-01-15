@@ -221,8 +221,8 @@ public class EqualsTest {
 
     @Test
     public void bigDecimal() {
-        ensureEqual(new BigDecimal(0), new BigDecimal(0), false);
-        ensureUnequal(new BigDecimal(1), new BigDecimal(1.1), false);
+        ensureEqual(new BigDecimal(0), new BigDecimal(0));
+        ensureUnequal(new BigDecimal(1), new BigDecimal(1.1));
     }
 
     @Test
