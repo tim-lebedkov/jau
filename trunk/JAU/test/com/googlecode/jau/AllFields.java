@@ -4,6 +4,7 @@ package com.googlecode.jau;
 @JAUCompareTo
 @JAUHashCode
 @JAUToString
+@JAUCopy
 public class AllFields {
     protected int value;
 }

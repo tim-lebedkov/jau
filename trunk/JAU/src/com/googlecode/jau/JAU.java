@@ -1,10 +1,15 @@
 package com.googlecode.jau;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Annotation based implementation of common methods.
@@ -371,6 +376,224 @@ public class JAU {
         }
 
         return true;
+    }
+
+    /**
+     * Check whether a class is annotated for automatic copy() (directly
+     * or through a package).
+     *
+     * @param c a class
+     * @return true = the class can be used for automatic equals()
+     */
+    private static boolean annotatedForCopy(Class c) {
+        // firstly, check package annotation
+        Package p = c.getPackage();
+        boolean include = false;
+        if (p != null) {
+            JAUCopy annotation = p.getAnnotation(JAUCopy.class);
+            if (annotation != null && annotation.include())
+                include = true;
+        }
+
+        // class annotation is more important if present
+        JAUCopy annotation = (JAUCopy) c.getAnnotation(JAUCopy.class);
+        if (annotation != null)
+            include = annotation.include();
+
+        return include;
+    }
+
+    /**
+     * Copies all data from one object to another (deep copy)
+     * Classes should be annotated using JAUCopy (directly or through the
+     * corresponding package) to be compared using reflection.
+     *
+     * Static and synthetic fields will be ignored.
+     * Nothing happens if a == b or one of the references is null.
+     *
+     * @param a first object or null (source)
+     * @param b second object or null (target)
+     */
+    public static void copy(Object a, Object b) {
+        if (a == b)
+            return;
+        if (a == null || b == null)
+            return;
+
+        Class ca = a.getClass();
+        Class cb = b.getClass();
+        if (ca != cb)
+            throw new InternalError("Cannot copy " + ca + " to " + cb);
+
+        if (ca.isArray()) {
+            int lengtha = Array.getLength(a);
+            int lengthb = Array.getLength(b);
+            if (lengtha != lengthb)
+                throw new InternalError("Cannot copy arrays with different lengths");
+
+            for (int i = 0; i < lengtha; i++) {
+                Object ela = Array.get(a, i);
+                if (ca.getComponentType().isPrimitive())
+                    Array.set(b, i, ela);
+                else
+                    Array.set(b, i, clone(ela));
+            }
+            return;
+        }
+
+        if (annotatedForCopy(ca))
+            copyAnnotated(a, b, ca,
+                    (JAUCopy) ca.getAnnotation(JAUCopy.class));
+        else
+            throw new InternalError("Class " + ca + " is not annotated for copy");
+    }
+
+    /**
+     * Firstly, this method creates an object: either by
+     * - invoking clone if the class of a implements Cloneable
+     * - invoking the default constructor (even if it is private)
+     * - invoking the copy constructor if it exists (in this case there will
+     *     be no special field copying)
+     *
+     * Copies of the following classes are not created:
+     * String.class
+     * Byte.class
+     * Short.class
+     * Integer.class
+     * Long.class
+     * Float.class
+     * Double.class
+     * Class.class
+     * Object.class
+     * 
+     * @param a an object or null
+     * @return null, if a == null
+     *    copy of a otherwise
+     */
+    public static Object clone(Object a) {
+        if (a == null)
+            return null;
+
+        Class ca = a.getClass();
+
+        Object result;
+        if (ca == String.class || ca == Byte.class || ca == Short.class ||
+                ca == Integer.class || ca == Long.class || ca == Float.class ||
+                ca == Double.class || ca == Class.class || ca == Object.class) {
+            result = a;
+        } else if (ca.isArray()) {
+            result = Array.newInstance(ca.getComponentType(),
+                    Array.getLength(a));
+        } else if (a instanceof Cloneable) {
+            try {
+                Method method = ca.getMethod("clone", (Class[]) null);
+                result = method.invoke(a, (Object[]) null);
+            } catch (Exception ex) {
+                throw (InternalError) new InternalError(ex.getMessage()).
+                        initCause(ex);
+            }
+        } else {
+            Constructor<? extends Object> constructor;
+            try {
+                constructor = ca.getConstructor(new Class[0]);
+            } catch (NoSuchMethodException ex) {
+                constructor = null;
+            } catch (SecurityException ex) {
+                constructor = null;
+            }
+            if (constructor != null) {
+                try {
+                    if (!constructor.isAccessible())
+                        constructor.setAccessible(true);
+                    result = constructor.newInstance((Object[]) null);
+                } catch (Exception ex) {
+                    throw (InternalError) new InternalError(ex.getMessage()).
+                            initCause(ex);
+                }
+            } else {
+                try {
+                    constructor = ca.getConstructor(new Class[] {ca});
+                } catch (NoSuchMethodException ex) {
+                    constructor = null;
+                } catch (SecurityException ex) {
+                    constructor = null;
+                }
+                if (constructor != null) {
+                    if (!constructor.isAccessible())
+                        constructor.setAccessible(true);
+                    try {
+                        return constructor.newInstance(new Object[] {a});
+                    } catch (Exception ex) {
+                        throw (InternalError) new InternalError(ex.getMessage()).
+                                initCause(ex);
+                    }
+                } else {
+                    try {
+                        result = ca.newInstance();
+                    } catch (Exception ex) {
+                        throw (InternalError) new InternalError(ex.getMessage()).
+                                initCause(ex);
+                    }
+                }
+            }
+        }
+        copy(a, result);
+        return result;
+    }
+
+    /**
+     * Compares 2 objects annotated by JAUCopy
+     *
+     * @param a first object
+     * @param b second object
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
+     * @return true = equals
+     */
+    private static void copyAnnotated(Object a, Object b,
+            Class ca, JAUCopy classAnnotation) {
+        Field[] fields = ca.getDeclaredFields();
+        for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                continue;
+
+            boolean include;
+            if (classAnnotation == null)
+                include = true;
+            else
+                include = classAnnotation.allFields();
+            JAUCopy an = (JAUCopy) f.getAnnotation(JAUCopy.class);
+            if (an != null)
+                include &= an.include();
+
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()))
+                    f.setAccessible(true);
+                try {
+                    Object fa = f.get(a);
+                    if (f.getType().isPrimitive())
+                        f.set(b, fa);
+                    else
+                        f.set(b, clone(fa));
+                } catch (IllegalArgumentException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                } catch (IllegalAccessException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                }
+            }
+        }
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class)
+                return;
+
+            if (annotatedForCopy(parentClass))
+                copyAnnotated(a, b, parentClass,
+                        (JAUCopy) parentClass.getAnnotation(JAUCopy.class));
+        }
     }
 
     /**
