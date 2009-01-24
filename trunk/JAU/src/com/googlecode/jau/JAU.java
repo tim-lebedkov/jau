@@ -953,4 +953,101 @@ public class JAU {
             }
         }
     }
+
+    /**
+     * Fills an object with properties stored in a map. Classes
+     * should be annotated using JAUToMap (directly or through the
+     * corresponding package) for this to work.
+     *
+     * Static and synthetic fields will be ignored.
+     *
+     * @param an object or null
+     * @param map a map filled with the property values, which will be
+     *     stored in <code>a</code>.
+     *     Nothing is done if <code>a</code> is null or the class of
+     *     <code>a</code> is not annotated or an array. Otherwise
+     *     properties stored in <code>a</code>.
+     */
+    public static void fromMap(Object a, Map<String, Object> map) {
+        if (a == null)
+            return;
+
+        Class ca = a.getClass();
+
+        if (ca.isArray())
+            return;
+
+        if (annotatedForToMap(ca)) {
+            Map<String, Object> m = new HashMap<String, Object>();
+            fromMapAnnotated(m, a, ca,
+                    (JAUToMap) ca.getAnnotation(JAUToMap.class));
+        }
+    }
+
+    /**
+     * Fills an object with properties from a map. Classes
+     * should be annotated using JAUToMap (directly or through the
+     * corresponding package) for this to work.
+     *
+     * @param map property name -> property value
+     * @param a the object
+     * @param ca only fields from this class (and superclasses of it)
+     *     are considered
+     * @param classAnnotation annotation of the class or null
+     * @return string representation
+     */
+    private static void fromMapAnnotated(Map<String, Object> map,
+            Object a,
+            Class ca, JAUToMap classAnnotation) {
+        Field[] fields = ca.getDeclaredFields();
+        for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                continue;
+
+            boolean include;
+            if (classAnnotation != null)
+                include = classAnnotation.allFields();
+            else
+                include = true;
+            JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
+            if (an != null)
+                include &= an.include();
+
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()))
+                    f.setAccessible(true);
+                try {
+                    String name;
+                    if (an != null) {
+                        name = an.name();
+                        if (name.length() == 0)
+                            name = f.getName();
+                    } else {
+                        name = f.getName();
+                    }
+
+                    if (map.containsKey(name))
+                        f.set(a, map.get(name));
+                } catch (IllegalArgumentException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                } catch (IllegalAccessException ex) {
+                    throw (InternalError) new InternalError(
+                            ex.getMessage()).initCause(ex);
+                }
+            }
+        }
+        if (classAnnotation == null || classAnnotation.inherited()) {
+            Class parentClass = ca.getSuperclass();
+            if (parentClass == null || parentClass == Object.class) {
+                // nothing
+            } else {
+                if (annotatedForToMap(parentClass)) {
+                    fromMapAnnotated(map, a, parentClass,
+                            (JAUToMap) parentClass.getAnnotation(
+                            JAUToMap.class));
+                }
+            }
+        }
+    }
 }
