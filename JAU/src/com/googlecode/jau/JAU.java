@@ -3,80 +3,17 @@ package com.googlecode.jau;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Annotation based implementation of common methods.
  */
 public class JAU {
-    private static final Map<String, String> reverseAbbreviationMap =
-            new HashMap<String, String>();
-
-    static {
-        reverseAbbreviationMap.put("I", "int");
-        reverseAbbreviationMap.put("Z", "boolean");
-        reverseAbbreviationMap.put("F", "float");
-        reverseAbbreviationMap.put("J", "long");
-        reverseAbbreviationMap.put("S", "short");
-        reverseAbbreviationMap.put("B", "byte");
-        reverseAbbreviationMap.put("D", "double");
-        reverseAbbreviationMap.put("C", "char");
-    }
-    
-    /**
-     * // Copied from Apache Commons
-     *
-     * <p>Converts a given name of class into canonical format.
-     * If name of class is not a name of array class it returns
-     * unchanged name.</p>
-     * <p>Example:
-     * <ul>
-     * <li><code>getCanonicalName("[I") = "int[]"</code></li>
-     * <li><code>getCanonicalName("[Ljava.lang.String;") = "java.lang.String[]"</code></li>
-     * <li><code>getCanonicalName("java.lang.String") = "java.lang.String"</code></li>
-     * </ul>
-     * </p>
-     *
-     * @param className the name of class
-     * @return canonical form of class name
-     */
-    private static String getCanonicalName(String className) {
-        int dim = 0;
-        while(className.startsWith("[")) {
-            dim++;
-            className = className.substring(1);
-        }
-        if(dim < 1) {
-            return className;
-        } else {
-            if(className.startsWith("L")) {
-                className = className.substring(
-                    1,
-                    className.endsWith(";")
-                        ? className.length() - 1
-                        : className.length());
-            } else {
-                if(className.length() > 0) {
-                    className = (String) reverseAbbreviationMap.get(
-                        className.substring(0, 1));
-                }
-            }
-            StringBuffer canonicalClassNameBuffer = new StringBuffer(className);
-            for(int i = 0; i < dim; i++) {
-                canonicalClassNameBuffer.append("[]");
-            }
-            return canonicalClassNameBuffer.toString();
-        }
-    }
-
     /**
      * Check whether a class is annotated for automatic hashCode() (directly
      * or through a package).
@@ -805,8 +742,7 @@ public class JAU {
             int lengtha = Array.getLength(a);
 
             StringBuilder sb = new StringBuilder();
-            sb.append(getCanonicalName(
-                    ca.getComponentType().getName())).append("[");
+            sb.append(ca.getComponentType().getCanonicalName()).append("[");
             for (int i = 0; i < lengtha; i++) {
                 if (i != 0)
                     sb.append(", ");
@@ -822,7 +758,7 @@ public class JAU {
 
         if (annotatedForToString(ca)) {
             StringBuilder sb = new StringBuilder();
-            sb.append(getCanonicalName(ca.getName())).append("@").
+            sb.append(ca.getCanonicalName()).append("@").
                     append(Integer.toHexString(
                     System.identityHashCode(a))).append("(");
             sb.append(toStringAnnotated(a, ca,
