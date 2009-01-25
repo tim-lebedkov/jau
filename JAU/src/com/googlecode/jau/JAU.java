@@ -902,6 +902,16 @@ public class JAU {
                     f.setAccessible(true);
                 try {
                     Object fa = f.get(a);
+                    if (!first) {
+                        sb.append(",");
+                    }
+                    if (classAnnotation != null &&
+                            classAnnotation.type() == JAUToStringType.MANY_LINES) {
+                        sb.append("\n    ");
+                    } else {
+                        if (!first)
+                            sb.append(" ");
+                    }
                     sb.append(f.getName()).append('=').append(toString(fa));
                     first = false;
                 } catch (IllegalArgumentException ex) {
@@ -943,13 +953,13 @@ public class JAU {
         Package p = c.getPackage();
         boolean include = false;
         if (p != null) {
-            JAUToString annotation = p.getAnnotation(JAUToString.class);
+            JAUToMap annotation = p.getAnnotation(JAUToMap.class);
             if (annotation != null && annotation.include())
                 include = true;
         }
 
         // class annotation is more important if present
-        JAUToString annotation = (JAUToString) c.getAnnotation(JAUToString.class);
+        JAUToMap annotation = (JAUToMap) c.getAnnotation(JAUToMap.class);
         if (annotation != null)
             include = annotation.include();
 
@@ -1069,7 +1079,7 @@ public class JAU {
      *     <code>a</code> is not annotated or an array. Otherwise
      *     properties stored in <code>a</code>.
      */
-    public static void fromMap(Object a, Map<String, Object> map) {
+    public static void fromMap(Map<String, Object> map, Object a) {
         if (a == null)
             return;
 
@@ -1079,8 +1089,7 @@ public class JAU {
             return;
 
         if (annotatedForToMap(ca)) {
-            Map<String, Object> m = new HashMap<String, Object>();
-            fromMapAnnotated(m, a, ca,
+            fromMapAnnotated(map, a, ca,
                     (JAUToMap) ca.getAnnotation(JAUToMap.class));
         }
     }

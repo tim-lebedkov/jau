@@ -3,6 +3,7 @@ package com.googlecode.jau;
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Map;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -117,5 +118,22 @@ public class ToMapTest {
         StaticField a = new StaticField();
         HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test
+    public void twoClasses() {
+        ClassOne a = new ClassOne();
+        ClassTwo b = new ClassTwo();
+
+        Map map = JAU.toMap(a);
+        JAU.fromMap(map, b);
+
+        map = JAU.toMap(b);
+
+        ClassOne a2 = new ClassOne();
+        a2.clear();
+        assertEquals(0, a2.byte_);
+        JAU.fromMap(map, a2);
+        assertTrue(JAU.toString(a) + " <> " + JAU.toString(a2), JAU.equals(a, a2));
     }
 }

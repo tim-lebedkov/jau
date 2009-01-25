@@ -27,4 +27,9 @@ public @interface JAUToString {
      * Should this package/class/field be considered for automatic toString()?
      */
     boolean include() default true;
+
+    /**
+     * Output type. This is only useful for classes.
+     */
+    JAUToStringType type() default JAUToStringType.ONE_LINE;
 }
