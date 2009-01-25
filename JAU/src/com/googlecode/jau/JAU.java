@@ -312,8 +312,7 @@ public class JAU {
      *     <p>true, if (a == b)</p>
      *     <p>false, if (a.getClass() != b.getClass())</p>
      *     <p>arrays are compared deeply using this method for each element
-     *     for classes annotated with JAUEquals only fields annotated with
-     *         EqualsProperty will be taken into account and compared</p>
+     *     for classes annotated with JAUEquals</p>
      *     <p>If a class is not annotated, but implements java.util.Map,
      *         it is compared so JAU.equals() is called for
      *         each value instead of a.equals(b)</p>
