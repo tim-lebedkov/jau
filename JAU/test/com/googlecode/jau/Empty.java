@@ -5,5 +5,6 @@ package com.googlecode.jau;
 @JAUHashCode
 @JAUToString
 @JAUCopy
+@JAUToMap
 public class Empty {
 }

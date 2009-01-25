@@ -5,6 +5,7 @@ package com.googlecode.jau;
 @JAUHashCode
 @JAUToString
 @JAUCopy
+@JAUToMap
 public class PrivateField {
     private int value;
 

@@ -8,12 +8,45 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Annotation based implementation of common methods.
  */
 public class JAU {
+    /**
+     * Returns the hash code value for this map.  The hash code of a map is
+     * defined to be the sum of the hash codes of each entry in the map's
+     * <tt>entrySet()</tt> view.  This ensures that <tt>m1.equals(m2)</tt>
+     * implies that <tt>m1.hashCode()==m2.hashCode()</tt> for any two maps
+     * <tt>m1</tt> and <tt>m2</tt>, as required by the general contract of
+     * {@link Object#hashCode}.
+     *
+     * <p>This implementation iterates over <tt>entrySet()</tt>, calling
+     * {@link Map.Entry#hashCode hashCode()} on each element (entry) in the
+     * set, and adding up the results.
+     *
+     * @return the hash code value for this map
+     * @see Map.Entry#hashCode()
+     * @see Object#equals(Object)
+     * @see Set#equals(Object)
+     */
+    private static <K, V> int mapHashCode(Map<K, V> map) {
+        int h = 0;
+        Iterator<Entry<K,V>> i = map.entrySet().iterator();
+        while (i.hasNext()) {
+            Entry<K, V> next = i.next();
+            Object key = next.getKey();
+            Object value = next.getValue();
+            int hc = (key == null ? 0 : hashCode(key)) ^
+                (value == null ? 0 : hashCode(value));
+            h += hc;
+        }
+        return h;
+    }
+
     /**
      * Check whether a class is annotated for automatic hashCode() (directly
      * or through a package).
@@ -115,8 +148,13 @@ public class JAU {
             return hashCodeAnnotated(a, ca, 
                     (JAUHashCode) ca.getAnnotation(JAUHashCode.class),
                     initialNonZeroOddNumber, multiplierNonZeroOddNumber);
-        else
-            return a.hashCode();
+
+        Class[] interfaces = ca.getInterfaces();
+        for (Class c: interfaces) {
+            if (c == java.util.Map.class)
+                return mapHashCode((Map) a);
+        }
+        return a.hashCode();
     }
 
     /**
@@ -182,6 +220,58 @@ public class JAU {
     }
 
     /**
+     * Compares the specified object with this map for equality.  Returns
+     * <tt>true</tt> if the given object is also a map and the two maps
+     * represent the same mappings.  More formally, two maps <tt>m1</tt> and
+     * <tt>m2</tt> represent the same mappings if
+     * <tt>m1.entrySet().equals(m2.entrySet())</tt>.  This ensures that the
+     * <tt>equals</tt> method works properly across different implementations
+     * of the <tt>Map</tt> interface.
+     *
+     * <p>This implementation first checks if the specified object is this map;
+     * if so it returns <tt>true</tt>.  Then, it checks if the specified
+     * object is a map whose size is identical to the size of this map; if
+     * not, it returns <tt>false</tt>.  If so, it iterates over this map's
+     * <tt>entrySet</tt> collection, and checks that the specified map
+     * contains each mapping that this map contains.  If the specified map
+     * fails to contain such a mapping, <tt>false</tt> is returned.  If the
+     * iteration completes, <tt>true</tt> is returned.
+     *
+     * @param o object to be compared for equality with this map
+     * @return <tt>true</tt> if the specified object is equal to this map
+     */
+    private static <K, V> boolean mapEquals(Map<K, V> a, Map<K, V> o) {
+        Map<K, V> m = (Map<K, V>) o;
+        if (m.size() != a.size()) {
+            return false;
+        }
+
+        try {
+            Iterator<Entry<K, V>> i = a.entrySet().iterator();
+            while (i.hasNext()) {
+                Entry<K, V> e = i.next();
+                K key = e.getKey();
+                V value = e.getValue();
+                if (value == null) {
+                    if (!(m.get(key) == null && m.containsKey(key))) {
+                        return false;
+                    }
+                } else {
+                    if (!equals(value, m.get(key))) {
+                        return false;
+                    }
+                }
+            }
+        } catch (ClassCastException unused) {
+            return false;
+        } catch (NullPointerException unused) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Check whether a class is annotated for automatic equals() (directly
      * or through a package).
      *
@@ -216,15 +306,18 @@ public class JAU {
      * @param a first object or null
      * @param b second object or null
      * @return
-     *     true, if (a == null) && (b == null)
-     *     false, if (a == null) && (b != null)
-     *     false, if (a != null) && (b == null)
-     *     true, if (a == b)
-     *     false, if (a.getClass() != b.getClass())
-     *     arrays are compared deeply using this method for each element
+     *     <p>true, if (a == null) && (b == null)</p>
+     *     <p>false, if (a == null) && (b != null)</p>
+     *     <p>false, if (a != null) && (b == null)</p>
+     *     <p>true, if (a == b)</p>
+     *     <p>false, if (a.getClass() != b.getClass())</p>
+     *     <p>arrays are compared deeply using this method for each element
      *     for classes annotated with JAUEquals only fields annotated with
-     *         EqualsProperty will be taken into account and compared
-     *     a.equals(b) otherwise
+     *         EqualsProperty will be taken into account and compared</p>
+     *     <p>If a class is not annotated, but implements java.util.Map,
+     *         it is compared so JAU.equals() is called for
+     *         each value instead of a.equals(b)</p>
+     *     <p>a.equals(b) otherwise</p>
      */
     public static boolean equals(Object a, Object b) {
         if (a == b)
@@ -255,8 +348,13 @@ public class JAU {
         if (annotatedForEquals(ca))
             return equalsAnnotated(a, b, ca, 
                     (JAUEquals) ca.getAnnotation(JAUEquals.class));
-        else
-            return a.equals(b);
+
+        Class[] interfaces = ca.getInterfaces();
+        for (Class c: interfaces) {
+            if (c == java.util.Map.class)
+                return mapEquals((Map) a, (Map) b);
+        }
+        return a.equals(b);
     }
 
     /**
@@ -587,13 +685,14 @@ public class JAU {
      *     -1, if (a == null) && (b != null)
      *     1, if (a != null) && (b == null)
      *     0, if (a == b)
-     *     -1, if (a.getClass() != b.getClass())
      *     arrays are compared deeply using this method for each element
      *     for classes annotated with JAUCompareTo only fields annotated with
      *         JAUCompareTo will be taken into account and compared
      *     a.compareTo(b) otherwise
+     * @throws IllegalArgumentException if a.getClass() != b.getClass() or
+     *     the class is not annotated and does not implement Comparable
      */
-    public static int compare(Object a, Object b) {
+    public static int compare(Object a, Object b) throws IllegalArgumentException {
         if (a == b)
             return 0;
         if (a == null)
@@ -604,7 +703,8 @@ public class JAU {
         Class ca = a.getClass();
         Class cb = b.getClass();
         if (ca != cb)
-            return -1;
+            throw new IllegalArgumentException(
+                    "Cannot compare instances of different classes");
 
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
@@ -627,7 +727,8 @@ public class JAU {
             if (a instanceof Comparable)
                 return ((Comparable) a).compareTo(b);
             else
-                return -1;
+                throw new java.lang.IllegalArgumentException(
+                        "Cannot compare instances of the class " + ca);
     }
 
     /**
