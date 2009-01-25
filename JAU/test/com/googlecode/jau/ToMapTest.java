@@ -1,5 +1,7 @@
 package com.googlecode.jau;
 
+import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -59,5 +61,61 @@ public class ToMapTest {
         m = new HashMap();
         m.put("value", new int[] {27, 34});
         assertTrue(JAU.equals(m, JAU.toMap(a)));
+    }
+
+    @Test
+    public void privateField() {
+        PrivateField a = new PrivateField();
+        a.setValue(20);
+        HashMap m = new HashMap();
+        m.put("value", new Integer(20));
+        assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test
+    public void protectedField() {
+        ProtectedField a = new ProtectedField();
+        a.value = 32;
+        HashMap m = new HashMap();
+        m.put("value", new Integer(32));
+        assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test
+    public void inherited() {
+        AllFields2 a = new AllFields2();
+        a.value = 32;
+        a.value2 = 33;
+        HashMap m = new HashMap();
+        m.put("value", new Integer(32));
+        m.put("value2", new Integer(33));
+        assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test
+    public void annotatedThroughPackage() {
+        EqualsAnnotatedThroughPackage a = new EqualsAnnotatedThroughPackage();
+        a.value = 32;
+        HashMap m = new HashMap();
+        m.put("value", new Integer(32));
+        assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test
+    public void simple() {
+        Object a = new Object();
+        HashMap m = new HashMap();
+        assertEquals(m, JAU.toMap(a));
+        assertEquals(m, JAU.toMap(new Integer(0)));
+        assertEquals(m, JAU.toMap("s"));
+        assertEquals(m, JAU.toMap(new BigDecimal(1023)));
+        assertEquals(m, JAU.toMap(null));
+    }
+
+    @Test
+    public void staticField() {
+        StaticField a = new StaticField();
+        HashMap m = new HashMap();
+        assertEquals(m, JAU.toMap(a));
     }
 }
