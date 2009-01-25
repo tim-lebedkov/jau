@@ -5,6 +5,7 @@ package com.googlecode.jau;
 @JAUHashCode
 @JAUToString
 @JAUCopy
+@JAUToMap
 // this class should *not* be public to test a special case where
 // the class does not seem to have a constructor
 final class IncludeFalse {
@@ -13,5 +14,6 @@ final class IncludeFalse {
     @JAUHashCode(include = false)
     @JAUToString(include = false)
     @JAUCopy(include = false)
+    @JAUToMap(include = false)
     public int value;
 }

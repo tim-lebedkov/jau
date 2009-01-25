@@ -2,6 +2,7 @@ package com.googlecode.jau;
 
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -16,7 +17,7 @@ public class EqualsTest {
      * @param b second object or null
      */
     private static void ensureEqual(Object a, Object b) {
-        ensureEqual(a, b, true);
+        ensureEqual(a, b, true, false);
     }
 
     /**
@@ -25,11 +26,23 @@ public class EqualsTest {
      * @param a first object or null
      * @param b second object or null
      * @param c true = test clone() too
+     * @param uncomparable true = JAU.compare() should throw an
+     *     IllegalArgumentException, false = 0 should be returned
      */
-    private static void ensureEqual(Object a, Object b, boolean clone) {
+    private static void ensureEqual(Object a, Object b, boolean clone,
+            boolean uncomparable) {
         assertTrue(JAU.equals(a, b));
         assertEquals(JAU.hashCode(a), JAU.hashCode(b));
-        assertEquals(0, JAU.compare(a, b));
+        if (uncomparable) {
+            try {
+                assertEquals(0, JAU.compare(a, b));
+                assertTrue("IllegalArgumentException expected", false);
+            } catch (IllegalArgumentException ex) {
+                // OK. As expected.
+            }
+        } else {
+            assertEquals(0, JAU.compare(a, b));
+        }
         if (clone) {
             assertTrue(JAU.equals(a, JAU.clone(a)));
             assertTrue(JAU.equals(b, JAU.clone(b)));
@@ -45,7 +58,7 @@ public class EqualsTest {
      * @param b second object or null
      */
     private static void ensureUnequal(Object a, Object b) {
-        ensureUnequal(a, b, true);
+        ensureUnequal(a, b, true, false);
     }
 
     /**
@@ -54,14 +67,27 @@ public class EqualsTest {
      * @param a first object or null
      * @param b second object or null
      * @param testCopy true = test JAU.clone() too
+     * @param uncomparable if true, an IllegalArgumentException should be
+     *     thrown by JAU.compare(), otherwise only a value different from 0
+     *     should be returned
      */
-    private static void ensureUnequal(Object a, Object b, boolean testCopy) {
+    private static void ensureUnequal(Object a, Object b, boolean testCopy,
+            boolean uncomparable) {
         assertFalse(JAU.equals(a, b));
 
         // for simple tests this should never happen
         assertFalse(JAU.hashCode(a) == JAU.hashCode(b));
 
-        assertTrue(JAU.compare(a, b) != 0);
+        if (uncomparable) {
+            try {
+                assertTrue(JAU.compare(a, b) != 0);
+                assertTrue("IllegalArgumentException was expected", false);
+            } catch (IllegalArgumentException ex) {
+                // OK. As expected
+            }
+        } else {
+            assertTrue(JAU.compare(a, b) != 0);
+        }
 
         if (testCopy) {
             assertFalse(JAU.equals(a, JAU.clone(b)));
@@ -73,21 +99,21 @@ public class EqualsTest {
     public void emptyNoAnnotation() {
         EmptyNoAnnotation a = new EmptyNoAnnotation();
         EmptyNoAnnotation b = new EmptyNoAnnotation();
-        ensureUnequal(a, b, false);
+        ensureUnequal(a, b, false, true);
     }
 
     @org.junit.Test
     public void oneFieldNoAnnotation() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         OneFieldNoAnnotation b = new OneFieldNoAnnotation();
-        ensureUnequal(a, b, false);
+        ensureUnequal(a, b, false, true);
     }
 
     @org.junit.Test
     public void diffClasses() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         EmptyNoAnnotation b = new EmptyNoAnnotation();
-        ensureUnequal(a, b, false);
+        ensureUnequal(a, b, false, true);
     }
 
     @org.junit.Test
@@ -198,7 +224,7 @@ public class EqualsTest {
 
     @Test
     public void object() {
-        ensureUnequal(new Object(), new Object());
+        ensureUnequal(new Object(), new Object(), true, true);
         Object a = new Object();
         ensureEqual(a, a);
     }
@@ -228,12 +254,12 @@ public class EqualsTest {
     @Test
     public void array() {
         ensureEqual(new String[0], new String[0]);
-        ensureUnequal(new String[0], new int[0]);
+        ensureUnequal(new String[0], new int[0], true, true);
         ensureEqual(new String[] {"a"}, new String[] {"a"});
         ensureUnequal(new String[] {"a"}, new String[] {"b"});
         ensureUnequal(new String[] {"a"}, new String[] {"a", "b"});
         ensureUnequal(new String[] {"a"}, new String[] {});
-        ensureUnequal(new String[] {"a"}, new String[][] {});
+        ensureUnequal(new String[] {"a"}, new String[][] {}, true, true);
         ensureEqual(new String[][] {{"a", "b"}, {"1", "2"}},
                 new String[][] {{"a", "b"}, {"1", "2"}});
     }
@@ -243,5 +269,14 @@ public class EqualsTest {
         ensureEqual(null, null);
         ensureUnequal(null, "");
         ensureUnequal("", null);
+    }
+
+    @Test
+    public void hashMap() {
+        HashMap a = new HashMap();
+        a.put("value", new int[0]);
+        HashMap b = new HashMap();
+        b.put("value", new int[0]);
+        ensureEqual(a, b, false, true);
     }
 }
