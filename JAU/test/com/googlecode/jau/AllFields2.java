@@ -5,6 +5,7 @@ package com.googlecode.jau;
 @JAUHashCode
 @JAUToString
 @JAUCopy
+@JAUToMap
 public class AllFields2 extends AllFields {
     protected int value2;
 }
