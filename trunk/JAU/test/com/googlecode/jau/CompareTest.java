@@ -74,10 +74,14 @@ public class CompareTest {
         assertEquals(1, JAU.compare(new BigDecimal(2000), new BigDecimal(999)));
     }
 
-    @Test
-    public void array() {
+    @Test(expected=IllegalArgumentException.class)
+    public void arrayUncomparable() {
         assertEquals(-1, JAU.compare(new int[] {},
                 new String[] {}));
+    }
+
+    @Test
+    public void array() {
         assertEquals(0, JAU.compare(new int[] {},
                 new int[] {}));
         assertEquals(0, JAU.compare(new int[] {1, 2, 3, 4},
