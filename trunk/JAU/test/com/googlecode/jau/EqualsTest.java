@@ -279,4 +279,16 @@ public class EqualsTest {
         b.put("value", new int[0]);
         ensureEqual(a, b, false, true);
     }
+
+    @Test
+    public void enum_() {
+        ensureEqual(ColorsEnum.RED, ColorsEnum.RED);
+        ensureUnequal(ColorsEnum.RED, ColorsEnum.GREEN);
+    }
+
+    @Test
+    public void stringBuffer() {
+        ensureEqual(new StringBuffer("a"), new StringBuffer("a"));
+        ensureUnequal(new StringBuffer("a"), new StringBuffer("b"));
+    }
 }

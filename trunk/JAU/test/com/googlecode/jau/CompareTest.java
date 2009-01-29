@@ -95,4 +95,11 @@ public class CompareTest {
         assertEquals(1, JAU.compare(new int[] {1, 2, 3, 4},
                 new int[] {1, 2, 3}));
     }
+
+    @Test
+    public void enum_() {
+        assertTrue(JAU.compare(ColorsEnum.GREEN, ColorsEnum.GREEN) == 0);
+        assertTrue(JAU.compare(ColorsEnum.GREEN, ColorsEnum.BLUE) < 0);
+        assertTrue(JAU.compare(ColorsEnum.BLUE, ColorsEnum.RED) > 0);
+    }
 }

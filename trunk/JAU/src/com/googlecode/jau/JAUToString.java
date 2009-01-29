@@ -31,5 +31,5 @@ public @interface JAUToString {
     /**
      * Output type. This is only useful for classes.
      */
-    JAUToStringType type() default JAUToStringType.ONE_LINE;
+    ToStringType type() default ToStringType.ONE_LINE;
 }

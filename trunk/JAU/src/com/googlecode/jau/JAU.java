@@ -7,7 +7,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,6 +18,52 @@ import java.util.Map.Entry;
  * Annotation based implementation of common methods.
  */
 public class JAU {
+    private static final Map<Class, Copier> COPIERS =
+            new Hashtable<Class, Copier>();
+    private static final Map<Class, Comparator> COMPARATORS =
+            new Hashtable<Class, Comparator>();
+    private static final Map<Class, HashCoder> HASH_CODERS =
+            new Hashtable<Class, HashCoder>();
+
+    static {
+        COPIERS.put(StringBuffer.class, new StringBufferCopier());
+        COPIERS.put(StringBuilder.class, new StringBuilderCopier());
+        COMPARATORS.put(StringBuffer.class, new StringBufferComparator());
+        COMPARATORS.put(StringBuilder.class, new StringBuilderComparator());
+        HASH_CODERS.put(StringBuffer.class, new StringBufferHashCoder());
+        HASH_CODERS.put(StringBuilder.class, new StringBuilderHashCoder());
+    }
+
+    /**
+     * Registeres a user defined Copier for a class
+     * 
+     * @param c a class
+     * @param copier a copier for the class
+     */
+    public static <T> void registerCopier(Class<T> c, Copier<T> copier) {
+        COPIERS.put(c, copier);
+    }
+
+    /**
+     * Registeres a user defined Comparator for a class
+     *
+     * @param c a class
+     * @param copier a copier for the class
+     */
+    public static <T> void registerComparator(Class<T> c, Comparator<T> copier) {
+        COMPARATORS.put(c, copier);
+    }
+
+    /**
+     * Registeres a user defined HashCoder for a class
+     *
+     * @param c a class
+     * @param hc a HashCoder for the class
+     */
+    public static <T> void registerHashCoder(Class<T> c, HashCoder<T> hc) {
+        HASH_CODERS.put(c, hc);
+    }
+
     /**
      * Returns the hash code value for this map.  The hash code of a map is
      * defined to be the sum of the hash codes of each entry in the map's
@@ -76,9 +124,17 @@ public class JAU {
      * Generates hash code for an object {@link Object#hashCode()}. Classes 
      * should be annotated using @JAUHashCode (directly or through the 
      * corresponding package) for automatic computation of hash code
-     * via reflection.
+     * via reflection. Another way
+     * is to register a user defined object to compute hash codes via
+     * {@link #registerHashCoder(java.lang.Class, com.googlecode.jau.HashCoder)}.
      *
      * Static and synthetic fields will be ignored.
+     *
+     * Default HashCoders are registered for the following classes:
+     * <ul>
+     *  <li>java.lang.StringBuffer</li>
+     *  <li>java.lang.StringBuilder</li>
+     * </ul>
      *
      * @param an object or null
      * @return generated hash code. If same fields in a class are marked
@@ -94,9 +150,17 @@ public class JAU {
      * Generates hash code for an object {@link Object#hashCode()}. Classes
      * should be annotated using @JAUHashCode (directly or through the
      * corresponding package) for automatic computation of hash code
-     * via reflection.
+     * via reflection. Another way
+     * is to register a user defined object to compute hash codes via
+     * {@link #registerHashCoder(java.lang.Class, com.googlecode.jau.HashCoder)}.
      *
      * Static and synthetic fields will be ignored.
+     *
+     * Default HashCoders are registered for the following classes:
+     * <ul>
+     *  <li>java.lang.StringBuffer</li>
+     *  <li>java.lang.StringBuilder</li>
+     * </ul>
      *
      * @param a an object or null
      * @param initialNonZeroOddNumber
@@ -107,6 +171,8 @@ public class JAU {
      *     with @JAUEquals and @JAUHashCode, the value returned by this
      *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
      *     are consistent.
+     * @throws IllegalArgumentException if initialNonZeroOddNumber is 0 or
+     *     even or multiplierNonZeroOddNumber is 0 or even
      */
     public static int hashCode(Object a, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
@@ -142,19 +208,23 @@ public class JAU {
                 result += hashCode(ela) * multiplierNonZeroOddNumber;
             }
             return result;
-        }
-
-        if (annotatedForHashCode(ca))
+        } else if (annotatedForHashCode(ca)) {
             return hashCodeAnnotated(a, ca, 
                     (JAUHashCode) ca.getAnnotation(JAUHashCode.class),
                     initialNonZeroOddNumber, multiplierNonZeroOddNumber);
-
-        Class[] interfaces = ca.getInterfaces();
-        for (Class c: interfaces) {
-            if (c == java.util.Map.class)
-                return mapHashCode((Map) a);
+        } else {
+            HashCoder hc = HASH_CODERS.get(ca);
+            if (hc != null)
+                return hc.hashCode(a);
+            else {
+                Class[] interfaces = ca.getInterfaces();
+                for (Class c: interfaces) {
+                    if (c == java.util.Map.class)
+                        return mapHashCode((Map) a);
+                }
+                return a.hashCode();
+            }
         }
-        return a.hashCode();
     }
 
     /**
@@ -299,7 +369,10 @@ public class JAU {
     /**
      * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
      * should be annotated using @JAUEquals (directly or through the
-     * corresponding package) to be compared using reflection.
+     * corresponding package) to be compared using reflection. Another way
+     * is to register a user defined object to copy values via
+     * {@link #registerComparator(java.lang.Class, java.util.Comparator))}.
+     * At last .equals(Object) is called.
      *
      * Static and synthetic fields will be ignored.
      *
@@ -342,18 +415,22 @@ public class JAU {
                     return false;
             }
             return true;
-        }
-
-        if (annotatedForEquals(ca))
+        } else if (annotatedForEquals(ca)) {
             return equalsAnnotated(a, b, ca, 
                     (JAUEquals) ca.getAnnotation(JAUEquals.class));
-
-        Class[] interfaces = ca.getInterfaces();
-        for (Class c: interfaces) {
-            if (c == java.util.Map.class)
-                return mapEquals((Map) a, (Map) b);
+        } else {
+            Comparator comparator = COMPARATORS.get(ca);
+            if (comparator != null)
+                return comparator.compare(a, b) == 0;
+            else {
+                Class[] interfaces = ca.getInterfaces();
+                for (Class c: interfaces) {
+                    if (c == java.util.Map.class)
+                        return mapEquals((Map) a, (Map) b);
+                }
+            }
+            return a.equals(b);
         }
-        return a.equals(b);
     }
 
     /**
@@ -442,30 +519,48 @@ public class JAU {
     /**
      * Copies all data from one object to another (deep copy)
      * Classes should be annotated using JAUCopy (directly or through the
-     * corresponding package) to be compared using reflection.
+     * corresponding package) to be compared using reflection. Another way
+     * is to register a user defined object to copy values via
+     * {@link #registerCopier(java.lang.Class, com.googlecode.jau.Copier)}
      *
      * Static and synthetic fields will be ignored.
-     * Nothing happens if a == b or one of the references is null.
      *
-     * @param a first object or null (source)
-     * @param b second object or null (target)
+     * Default Copiers are registered for the following classes:
+     * <ul>
+     *  <li>java.lang.StringBuffer</li>
+     *  <li>java.lang.StringBuilder</li>
+     * </ul>
+     *
+     * @param a first object
+     * @param b second object
+     * @throws IllegalArgumentException if 
+     *     <p><code>a</code> or <code>b</code> are instances of different classes</p>
+     *     <p>class of <code>a</code> and <code>b</code> is immutable {@link #isImmutableClass(java.lang.Class)} i </p>
+     *     <p><code>a</code> or <code>b</code> is null or</p>
+     *     <p><code>a</code> and <code>b</code> are arrays with different lenghts</p>
+     *     <p>class of <code>a</code> and <code>b</code> is not annotated with JAUCopy</p>
      */
     public static void copy(Object a, Object b) {
-        if (a == b)
-            return;
         if (a == null || b == null)
+            throw new IllegalArgumentException("a or b is null");
+
+        if (a == b)
             return;
 
         Class ca = a.getClass();
         Class cb = b.getClass();
         if (ca != cb)
-            throw new InternalError("Cannot copy " + ca + " to " + cb);
+            throw new IllegalArgumentException("Cannot copy " + ca + " to " + cb);
+
+        if (ca.isEnum())
+            throw new IllegalArgumentException(
+                    "copy() does not work for enumeration values");
 
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
             int lengthb = Array.getLength(b);
             if (lengtha != lengthb)
-                throw new InternalError("Cannot copy arrays with different lengths");
+                throw new IllegalArgumentException("Cannot copy arrays with different lengths");
 
             for (int i = 0; i < lengtha; i++) {
                 Object ela = Array.get(a, i);
@@ -475,13 +570,17 @@ public class JAU {
                     Array.set(b, i, clone(ela));
             }
             return;
-        }
-
-        if (annotatedForCopy(ca))
+        } else if (annotatedForCopy(ca)) {
             copyAnnotated(a, b, ca,
                     (JAUCopy) ca.getAnnotation(JAUCopy.class));
-        else
-            throw new InternalError("Class " + ca + " is not annotated for copy");
+        } else {
+            Copier copier = COPIERS.get(ca);
+            if (copier != null)
+                copier.copy(a, b);
+            else
+                throw new IllegalArgumentException(
+                        "Class " + ca + " is not annotated for copy");
+        }
     }
 
     /**
@@ -491,18 +590,9 @@ public class JAU {
      * - invoking the copy constructor if it exists (in this case there will
      *     be no special field copying)
      *
-     * Copies of the following classes are not created:
-     * String.class
-     * Byte.class
-     * Short.class
-     * Integer.class
-     * Long.class
-     * Float.class
-     * Double.class
-     * Class.class
-     * Object.class
-     * BigDecimal.class
-     * BigInteger.class
+     * Copies of the following classes are not created
+     * for enumerations or immutable classes
+     * {@link #isImmutableClass(java.lang.Class)}
      * 
      * @param a an object or null
      * @return null, if a == null
@@ -515,10 +605,7 @@ public class JAU {
         Class ca = a.getClass();
 
         Object result;
-        if (ca == String.class || ca == Byte.class || ca == Short.class ||
-                ca == Integer.class || ca == Long.class || ca == Float.class ||
-                ca == Double.class || ca == Class.class || ca == Object.class ||
-                ca == BigDecimal.class || ca == BigInteger.class) {
+        if (isImmutableClass(ca)) {
             result = a;
         } else if (ca.isArray()) {
             result = Array.newInstance(ca.getComponentType(),
@@ -663,7 +750,10 @@ public class JAU {
     /**
      * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
      * should be annotated using JAUCompareTo (directly or through the
-     * corresponding package) to be compared using reflection. Otherwise if
+     * corresponding package) to be compared using reflection. Another way
+     * is to register a user defined object to copy values via
+     * {@link #registerComparator(java.lang.Class, java.util.Comparator))}.
+     * Otherwise if
      * a class implements Comparable it's compareTo method is used.
      *
      * Fields in a class are compared from to top bottom (e.g. first field is 
@@ -717,17 +807,19 @@ public class JAU {
                     return r;
             }
             return lengtha - lengthb;
-        }
-
-        if (annotatedForCompare(ca))
+        } else if (annotatedForCompare(ca)) {
             return compareAnnotated(a, b, ca,
                     (JAUCompareTo) ca.getAnnotation(JAUCompareTo.class));
-        else
-            if (a instanceof Comparable)
-                return ((Comparable) a).compareTo(b);
+        } else if (a instanceof Comparable) {
+            return ((Comparable) a).compareTo(b);
+        } else {
+            Comparator comparator = COMPARATORS.get(ca);
+            if (comparator != null)
+                return comparator.compare(a, b);
             else
                 throw new java.lang.IllegalArgumentException(
                         "Cannot compare instances of the class " + ca);
+        }
     }
 
     /**
@@ -819,18 +911,16 @@ public class JAU {
     }
 
     /**
-     * Generates hash code for an object {@link Object#hashCode()}. Classes
-     * should be annotated using @JAUHashCode (directly or through the
-     * corresponding package) for automatic computation of hash code
-     * via reflection.
+     * Generates string representation of an object ({@link Object#toString()}).
+     * Classes should be annotated using @JAUToString (directly or through the
+     * corresponding package) for automatic computation of string
+     * representation via reflection.
      *
      * Static and synthetic fields will be ignored.
+     * Enums are represented as "com.example.EnumClass.VALUE"
      *
      * @param an object or null
-     * @return generated hash code. If same fields in a class are marked
-     *     with @JAUEquals and @JAUHashCode, the value returned by this
-     *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
-     *     are consistent.
+     * @return string representation.
      */
     public static String toString(Object a) {
         if (a == null)
@@ -851,12 +941,11 @@ public class JAU {
             }
             sb.append("]");
             return sb.toString();
-        }
-
-        if (ca == String.class)
+        } else if (ca.isEnum()) {
+            return ca.getName() + "." + a.toString();
+        } else if (ca == String.class) {
             return "\"" + a + "\"";
-
-        if (annotatedForToString(ca)) {
+        } else if (annotatedForToString(ca)) {
             StringBuilder sb = new StringBuilder();
             sb.append(ca.getCanonicalName()).append("@").
                     append(Integer.toHexString(
@@ -905,7 +994,7 @@ public class JAU {
                         sb.append(",");
                     }
                     if (classAnnotation != null &&
-                            classAnnotation.type() == JAUToStringType.MANY_LINES) {
+                            classAnnotation.type() == ToStringType.MANY_LINES) {
                         sb.append("\n    ");
                     } else {
                         if (!first)
@@ -976,9 +1065,9 @@ public class JAU {
      * @return a map filled with the property values from <code>a</code>.
      *     An empty map is returned if <code>a</code> is null. Otherwise
      *     there will be an entry for every property from <code>a</code> with
-     *     the value from the object. The returned map is mutable. An empty
-     *     map is returned if a is an array or the class of <code>a</code> is
-     *     not annotated.
+     *     the value from the object. The returned map is mutable.
+     * @throws IllegalArgumentException if <code>a</code> is an
+     *     enumeration value or an array
      */
     public static Map<String, Object> toMap(Object a) {
         if (a == null)
@@ -986,8 +1075,9 @@ public class JAU {
 
         Class ca = a.getClass();
 
-        if (ca.isArray()) 
-            return new HashMap();
+        if (ca.isArray() || ca.isEnum())
+            throw new IllegalArgumentException(
+                    "toMap() does not work for arrays and enumeration values");
 
         if (annotatedForToMap(ca)) {
             Map<String, Object> m = new HashMap<String, Object>();
@@ -1158,5 +1248,34 @@ public class JAU {
                 }
             }
         }
+    }
+
+    /**
+     * Tests whether a class is immutable.
+     *
+     * Following classes are considered immutable:
+     * <ul>
+     *  <li>String.class</li>
+     *  <li>Byte.class</li>
+     *  <li>Short.class</li>
+     *  <li>Integer.class</li>
+     *  <li>Long.class</li>
+     *  <li>Float.class</li>
+     *  <li>Double.class</li>
+     *  <li>Class.class</li>
+     *  <li>Object.class</li>
+     *  <li>BigDecimal.class</li>
+     *  <li>BigInteger.class</li>
+     *  <li>any enumeration class</li>
+     * </ul>
+     *
+     * @param c a class
+     * @return true = instances of the class are not mutable
+     */
+    static boolean isImmutableClass(Class c) {
+        return c == String.class || c == Byte.class || c == Short.class ||
+                c == Integer.class || c == Long.class || c == Float.class ||
+                c == Double.class || c == Class.class || c == Object.class ||
+                c == BigDecimal.class || c == BigInteger.class || c.isEnum();
     }
 }
