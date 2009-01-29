@@ -71,4 +71,14 @@
     nbproject/build-impl.xml file. 
 
     -->
+
+    <property name="config" value="perf-config.xml"/>
+
+    <target name="perf-tests" depends="init,compile-test">
+        <echo message="${javac.test.classpath};${build.test.classes.dir}"/>
+        <java dir="." fork="true" classname="com.sun.japex.Japex">
+            <classpath path="build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
+            <arg line="${config}/"/>
+        </java>
+    </target>
 </project>
