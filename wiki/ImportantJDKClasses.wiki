@@ -1,4 +1,4 @@
-list of JDK 6 packages that should work with JAU.
+#summary List of JDK 6 packages that should work with JAU.
 
 = Introduction =
 
