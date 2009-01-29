@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testSuite name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuite">
+
+    <param name="japex.classPath" value="build/classes;build/test/classes"/>
+    
+    <param name="japex.resultUnit" value="ms"/>
+    <param name="japex.warmupIterations" value="0"/>
+    <param name="japex.runIterations" value="1000"/>
+
+    <driver name="toString">
+        <param name="japex.driverClass" value="com.googlecode.jau.ToStringPerfTest"/>
+        <param name="description" value="Memory usage sample class"/>
+    </driver>
+
+    <testCase name="test1"/>
+    <testCase name="test2"/>
+    <testCase name="test3"/>
+
+</testSuite>
