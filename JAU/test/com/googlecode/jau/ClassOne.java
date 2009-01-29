@@ -2,7 +2,7 @@ package com.googlecode.jau;
 
 @JAUEquals
 @JAUToMap
-@JAUToString(type=JAUToStringType.MANY_LINES)
+@JAUToString(type=ToStringType.MANY_LINES)
 public class ClassOne {
     public byte byte_ = 34;
     public short short_ = 324;

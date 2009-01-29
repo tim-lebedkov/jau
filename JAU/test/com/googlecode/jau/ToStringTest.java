@@ -2,6 +2,7 @@ package com.googlecode.jau;
 
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import javax.swing.JFrame;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -158,5 +159,10 @@ public class ToStringTest {
         String s = JAU.toString(new JFrame());
         assertTrue(s.startsWith("javax.swing.JFrame["));
         assertTrue(s.endsWith("]"));
+    }
+
+    @Test
+    public void enum_() {
+        assertEquals("com.googlecode.jau.ColorsEnum.RED", JAU.toString(ColorsEnum.RED));
     }
 }

@@ -136,4 +136,16 @@ public class ToMapTest {
         JAU.fromMap(map, a2);
         assertTrue(JAU.toString(a) + " <> " + JAU.toString(a2), JAU.equals(a, a2));
     }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void enum_() {
+        Map map = JAU.toMap(ColorsEnum.BLUE);
+        System.out.println(JAU.toString(map));
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void array() {
+        Map map = JAU.toMap(new int[] {0});
+        System.out.println(JAU.toString(map));
+    }
 }
