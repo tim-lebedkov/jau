@@ -5,16 +5,18 @@
     <param name="japex.classPath" value="build/classes;build/test/classes"/>
     
     <param name="japex.resultUnit" value="ms"/>
-    <param name="japex.warmupIterations" value="0"/>
-    <param name="japex.runIterations" value="1000"/>
+    <param name="japex.warmupIterations" value="20000"/>
+    <param name="japex.runIterations" value="1000000"/>
 
-    <driver name="toString">
-        <param name="japex.driverClass" value="com.googlecode.jau.ToStringPerfTest"/>
-        <param name="description" value="Memory usage sample class"/>
+    <driver name="toStringJAU">
+        <param name="japex.driverClass" value="com.googlecode.jau.GGJAUPerfTest2"/>
+        <param name="description" value="JAU.toString() performance"/>
+    </driver>
+
+    <driver name="toStringManual">
+        <param name="japex.driverClass" value="com.googlecode.jau.GGManualPerfTest2"/>
+        <param name="description" value="JAU.toString() performance"/>
     </driver>
 
     <testCase name="test1"/>
-    <testCase name="test2"/>
-    <testCase name="test3"/>
-
 </testSuite>

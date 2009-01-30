@@ -35,7 +35,7 @@ public class JAU {
     }
 
     /**
-     * Registeres a user defined Copier for a class
+     * Registeres a user defined Copier for a class.
      * 
      * @param c a class
      * @param copier a copier for the class
@@ -923,15 +923,34 @@ public class JAU {
      * @return string representation.
      */
     public static String toString(Object a) {
-        if (a == null)
-            return "null";
+        StringBuilder sb = new StringBuilder();
+        toString(sb, a);
+        return sb.toString();
+    }
+
+    /**
+     * Generates string representation of an object ({@link Object#toString()}).
+     * Classes should be annotated using @JAUToString (directly or through the
+     * corresponding package) for automatic computation of string
+     * representation via reflection.
+     *
+     * Static and synthetic fields will be ignored.
+     * Enums are represented as "com.example.EnumClass.VALUE"
+     *
+     * @param sb string representation will be stored here
+     * @param an object or null
+     */
+    private static void toString(StringBuilder sb, Object a) {
+        if (a == null) {
+            sb.append("null");
+            return;
+        }
 
         Class ca = a.getClass();
 
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
 
-            StringBuilder sb = new StringBuilder();
             sb.append(ca.getComponentType().getCanonicalName()).append("[");
             for (int i = 0; i < lengtha; i++) {
                 if (i != 0)
@@ -940,67 +959,73 @@ public class JAU {
                 sb.append(toString(ela));
             }
             sb.append("]");
-            return sb.toString();
         } else if (ca.isEnum()) {
-            return ca.getName() + "." + a.toString();
+            sb.append(ca.getName()).append(".").append(a.toString());
         } else if (ca == String.class) {
-            return "\"" + a + "\"";
+            sb.append('\"').append(a).append('\"');
         } else if (annotatedForToString(ca)) {
-            StringBuilder sb = new StringBuilder();
             sb.append(ca.getCanonicalName()).append("@").
                     append(Integer.toHexString(
                     System.identityHashCode(a))).append("(");
-            sb.append(toStringAnnotated(a, ca,
-                    (JAUToString) ca.getAnnotation(JAUToString.class)));
+            toStringAnnotated(sb, a, ca,
+                    (JAUToString) ca.getAnnotation(JAUToString.class));
             sb.append(")");
-            return sb.toString();
-        } else
-            return a.toString();
+        } else {
+            sb.append(a.toString());
+        }
     }
 
     /**
-     * Computes hash code for an object annotated by @JAUToString
+     * Computes string representation for an object annotated by JAUToString
      *
+     * @param sb string representation appended here
      * @param a the object
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
      * @return string representation
      */
-    private static String toStringAnnotated(Object a,
+    private static void toStringAnnotated(StringBuilder sb, Object a,
             Class ca, JAUToString classAnnotation) {
-        StringBuilder sb = new StringBuilder();
         Field[] fields = ca.getDeclaredFields();
         boolean first = true;
+
+        ToStringType t;
+        if (classAnnotation != null)
+            t = classAnnotation.type();
+        else
+            t = ToStringType.ONE_LINE;
+
+        boolean defaultInclude;
+        if (classAnnotation != null)
+            defaultInclude = classAnnotation.allFields();
+        else
+            defaultInclude = true;
+        
         for (Field f: fields) {
             if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
                 continue;
 
-            boolean include;
-            if (classAnnotation != null)
-                include = classAnnotation.allFields();
-            else
-                include = true;
+            boolean include = defaultInclude;
             JAUToString an = (JAUToString) f.getAnnotation(JAUToString.class);
             if (an != null)
                 include &= an.include();
 
             if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
                     f.setAccessible(true);
+                if (!first) {
+                    sb.append(",");
+                }
+                if (t == ToStringType.MANY_LINES) {
+                    sb.append("\n    ");
+                } else {
+                    if (!first)
+                        sb.append(" ");
+                }
+                sb.append(f.getName()).append('=');
                 try {
-                    Object fa = f.get(a);
-                    if (!first) {
-                        sb.append(",");
-                    }
-                    if (classAnnotation != null &&
-                            classAnnotation.type() == ToStringType.MANY_LINES) {
-                        sb.append("\n    ");
-                    } else {
-                        if (!first)
-                            sb.append(" ");
-                    }
-                    sb.append(f.getName()).append('=').append(toString(fa));
+                    fieldToString(sb, f, a);
                     first = false;
                 } catch (IllegalArgumentException ex) {
                     throw (InternalError) new InternalError(
@@ -1019,14 +1044,44 @@ public class JAU {
                 if (annotatedForToString(parentClass)) {
                     if (!first)
                         sb.append(", ");
-                    sb.append(toStringAnnotated(a, parentClass,
+                    toStringAnnotated(sb, a, parentClass,
                             (JAUToString) parentClass.getAnnotation(
-                            JAUToString.class)));
+                            JAUToString.class));
                 }
             }
         }
+    }
 
-        return sb.toString();
+    /**
+     * Optimized version for appending value of a field to string
+     * representation.
+     * 
+     * @param sb output
+     * @param f value of this field will be appended
+     * @param a value for the field will be read from this object
+     */
+    private static void fieldToString(StringBuilder sb, Field f, Object a)
+            throws IllegalArgumentException, IllegalAccessException {
+        Class c = f.getType();
+        if (c.isPrimitive()) {
+            if (c == Byte.TYPE) {
+                sb.append(f.getByte(a));
+            } else if (c == Short.TYPE) {
+                sb.append(f.getShort(a));
+            } else if (c == Integer.TYPE) {
+                sb.append(f.getInt(a));
+            } else if (c == Long.TYPE) {
+                sb.append(f.getLong(a));
+            } else if (c == Float.TYPE) {
+                sb.append(f.getFloat(a));
+            } else if (c == Double.TYPE) {
+                sb.append(f.getDouble(a));
+            } else {
+                toString(sb, f.get(a));
+            }
+        } else {
+            toString(sb, f.get(a));
+        }
     }
 
     /**
