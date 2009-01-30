@@ -5,7 +5,7 @@ import com.sun.japex.*;
 /**
  * Performance tests.
  */
-public class ToStringPerfTest extends JapexDriverBase {
+public class ToStringPerfTest2 extends JapexDriverBase {
     private int[] object;
 
     @Override

@@ -10,6 +10,7 @@
 <project name="JAU" default="default" basedir=".">
     <description>Builds, tests, and runs the project JAU.</description>
     <import file="nbproject/build-impl.xml"/>
+    <import file="nbproject/profiler-build-impl.xml"/>
     <!--
 
     There exist several targets which are by default empty and which can be 
@@ -75,9 +76,8 @@
     <property name="config" value="perf-config.xml"/>
 
     <target name="perf-tests" depends="init,compile-test">
-        <echo message="${javac.test.classpath};${build.test.classes.dir}"/>
         <java dir="." fork="true" classname="com.sun.japex.Japex">
-            <classpath path="build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
+            <classpath path="C:\Dokumente und Einstellungen\tim\Eigene Dateien\libs\japex-1.1\lib\ant.jar;build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
             <arg line="${config}/"/>
         </java>
     </target>
