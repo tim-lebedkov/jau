@@ -7,10 +7,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -24,6 +27,33 @@ public class JAU {
             new Hashtable<Class, Comparator>();
     private static final Map<Class, HashCoder> HASH_CODERS =
             new Hashtable<Class, HashCoder>();
+
+    private static final Map<Class, Boolean> ANNOTATED_FOR_TO_STRING = 
+            new Hashtable<Class, Boolean>();
+    private static final Map<Class, Boolean> ANNOTATED_FOR_HASHCODE =
+            new Hashtable<Class, Boolean>();
+    private static final Map<Class, Boolean> ANNOTATED_FOR_EQUALS =
+            new Hashtable<Class, Boolean>();
+    private static final Map<Class, Boolean> ANNOTATED_FOR_COPY =
+            new Hashtable<Class, Boolean>();
+    private static final Map<Class, Boolean> ANNOTATED_FOR_COMPARE =
+            new Hashtable<Class, Boolean>();
+    private static final Map<Class, Boolean> ANNOTATED_FOR_TOMAP =
+            new Hashtable<Class, Boolean>();
+
+    private static final Map<Class, Field[]> TO_STRING_FIELDS =
+            new Hashtable<Class, Field[]>();
+    private static final Map<Class, Field[]> EQUALS_FIELDS =
+            new Hashtable<Class, Field[]>();
+    private static final Map<Class, Field[]> HASHCODE_FIELDS =
+            new Hashtable<Class, Field[]>();
+    private static final Map<Class, Field[]> COPY_FIELDS =
+            new Hashtable<Class, Field[]>();
+    private static final Map<Class, Field[]> COMPARE_FIELDS =
+            new Hashtable<Class, Field[]>();
+    private static final Map<Class, Field[]> TO_MAP_FIELDS =
+            new Hashtable<Class, Field[]>();
+
 
     static {
         COPIERS.put(StringBuffer.class, new StringBufferCopier());
@@ -51,6 +81,14 @@ public class JAU {
      * @param copier a copier for the class
      */
     public static <T> void registerComparator(Class<T> c, Comparator<T> copier) {
+        if (c.isArray())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for an array");
+        for (Class intf: c.getInterfaces())
+            if (intf == Comparable.class)
+                throw new IllegalArgumentException(
+                    "Cannot register a comparator for a class that implements " +
+                    "java.lang.Comparable");
         COMPARATORS.put(c, copier);
     }
 
@@ -103,21 +141,27 @@ public class JAU {
      * @return true = the class can be used for automatic hashCode()
      */
     private static boolean annotatedForHashCode(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUHashCode annotation = p.getAnnotation(JAUHashCode.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean b = ANNOTATED_FOR_HASHCODE.get(c);
+        if (b == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUHashCode annotation = p.getAnnotation(JAUHashCode.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUHashCode annotation = (JAUHashCode) c.getAnnotation(JAUHashCode.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_HASHCODE.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return b.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUHashCode annotation = (JAUHashCode) c.getAnnotation(JAUHashCode.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -243,34 +287,20 @@ public class JAU {
     private static int hashCodeAnnotated(Object a,
             Class ca, JAUHashCode classAnnotation, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForHashCode(ca);
         int result = initialNonZeroOddNumber;
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include;
-            if (classAnnotation != null)
-                include = classAnnotation.allFields();
-            else
-                include = true;
-            JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    Object fa = f.get(a);
-                    result += multiplierNonZeroOddNumber * hashCode(fa);
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                }
+            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                f.setAccessible(true);
+            try {
+                Object fa = f.get(a);
+                result += multiplierNonZeroOddNumber * hashCode(fa);
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
@@ -349,21 +379,27 @@ public class JAU {
      * @return true = the class can be used for automatic equals()
      */
     private static boolean annotatedForEquals(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUEquals annotation = p.getAnnotation(JAUEquals.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean b = ANNOTATED_FOR_EQUALS.get(c);
+        if (b == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUEquals annotation = p.getAnnotation(JAUEquals.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUEquals annotation = (JAUEquals) c.getAnnotation(JAUEquals.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_EQUALS.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return b.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUEquals annotation = (JAUEquals) c.getAnnotation(JAUEquals.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -445,35 +481,21 @@ public class JAU {
      */
     private static boolean equalsAnnotated(Object a, Object b,
             Class ca, JAUEquals classAnnotation) {
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForEquals(ca);
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-            
-            boolean include;
-            if (classAnnotation == null)
-                include = true;
-            else
-                include = classAnnotation.allFields();
-            JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    Object fa = f.get(a);
-                    Object fb = f.get(b);
-                    if (!equals(fa, fb))
-                        return false;
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                }
+            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                f.setAccessible(true);
+            try {
+                Object fa = f.get(a);
+                Object fb = f.get(b);
+                if (!equals(fa, fb))
+                    return false;
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
@@ -499,21 +521,27 @@ public class JAU {
      * @return true = the class can be used for automatic equals()
      */
     private static boolean annotatedForCopy(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUCopy annotation = p.getAnnotation(JAUCopy.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean b = ANNOTATED_FOR_COPY.get(c);
+        if (b == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUCopy annotation = p.getAnnotation(JAUCopy.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUCopy annotation = (JAUCopy) c.getAnnotation(JAUCopy.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_COPY.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return b.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUCopy annotation = (JAUCopy) c.getAnnotation(JAUCopy.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -679,36 +707,22 @@ public class JAU {
      */
     private static void copyAnnotated(Object a, Object b,
             Class ca, JAUCopy classAnnotation) {
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForCopy(ca);
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include;
-            if (classAnnotation == null)
-                include = true;
-            else
-                include = classAnnotation.allFields();
-            JAUCopy an = (JAUCopy) f.getAnnotation(JAUCopy.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    Object fa = f.get(a);
-                    if (f.getType().isPrimitive())
-                        f.set(b, fa);
-                    else
-                        f.set(b, clone(fa));
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                }
+            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                f.setAccessible(true);
+            try {
+                Object fa = f.get(a);
+                if (f.getType().isPrimitive())
+                    f.set(b, fa);
+                else
+                    f.set(b, clone(fa));
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
@@ -730,21 +744,27 @@ public class JAU {
      * @return true = the class can be used for automatic equals()
      */
     private static boolean annotatedForCompare(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUCompareTo annotation = p.getAnnotation(JAUCompareTo.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean b = ANNOTATED_FOR_COMPARE.get(c);
+        if (b == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUCompareTo annotation = p.getAnnotation(JAUCompareTo.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUCompareTo annotation = (JAUCompareTo) c.getAnnotation(JAUCompareTo.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_COMPARE.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return b.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUCompareTo annotation = (JAUCompareTo) c.getAnnotation(JAUCompareTo.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -849,36 +869,22 @@ public class JAU {
         if (inheritedCompare != 0)
             return inheritedCompare;
 
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForCompare(ca);
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include;
-            if (classAnnotation == null)
-                include = true;
-            else
-                include = classAnnotation.allFields();
-            JAUCompareTo an = (JAUCompareTo) f.getAnnotation(JAUCompareTo.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    Object fa = f.get(a);
-                    Object fb = f.get(b);
-                    int r = compare(fa, fb);
-                    if (r != 0)
-                        return r;
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                }
+            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                f.setAccessible(true);
+            try {
+                Object fa = f.get(a);
+                Object fb = f.get(b);
+                int r = compare(fa, fb);
+                if (r != 0)
+                    return r;
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
 
@@ -893,21 +899,27 @@ public class JAU {
      * @return true = the class can be used for automatic toString()
      */
     private static boolean annotatedForToString(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUToString annotation = p.getAnnotation(JAUToString.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean a = ANNOTATED_FOR_TO_STRING.get(c);
+        if (a == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUToString annotation = p.getAnnotation(JAUToString.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUToString annotation = (JAUToString) c.getAnnotation(JAUToString.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_TO_STRING.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return a.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUToString annotation = (JAUToString) c.getAnnotation(JAUToString.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -926,6 +938,246 @@ public class JAU {
         StringBuilder sb = new StringBuilder();
         toString(sb, a);
         return sb.toString();
+    }
+
+    /**
+     * Returns all fields necessary to perform equals() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUEquals
+     * @return fields
+     */
+    private static Field[] getFieldsForEquals(Class c) {
+        Field[] fields = EQUALS_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUEquals classAnnotation =
+                    (JAUEquals) c.getAnnotation(JAUEquals.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            EQUALS_FIELDS.put(c, fields);
+        }
+        return fields;
+    }
+
+    /**
+     * Returns all fields necessary to perform equals() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUEquals
+     * @return fields
+     */
+    private static Field[] getFieldsForToMap(Class c) {
+        Field[] fields = TO_MAP_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUToMap classAnnotation =
+                    (JAUToMap) c.getAnnotation(JAUToMap.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            TO_MAP_FIELDS.put(c, fields);
+        }
+        return fields;
+    }
+
+    /**
+     * Returns all fields necessary to perform compare() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUCompareTo
+     * @return fields
+     */
+    private static Field[] getFieldsForCompare(Class c) {
+        Field[] fields = COMPARE_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUCompareTo classAnnotation =
+                    (JAUCompareTo) c.getAnnotation(JAUCompareTo.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUCompareTo an = (JAUCompareTo) f.getAnnotation(JAUCompareTo.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            COMPARE_FIELDS.put(c, fields);
+        }
+        return fields;
+    }
+
+    /**
+     * Returns all fields necessary to perform copy() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUCopy
+     * @return fields
+     */
+    private static Field[] getFieldsForCopy(Class c) {
+        Field[] fields = COPY_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUCopy classAnnotation =
+                    (JAUCopy) c.getAnnotation(JAUCopy.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUCopy an = (JAUCopy) f.getAnnotation(JAUCopy.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            COPY_FIELDS.put(c, fields);
+        }
+        return fields;
+    }
+
+    /**
+     * Returns all fields necessary to perform hashCode() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUHashCode
+     * @return fields
+     */
+    private static Field[] getFieldsForHashCode(Class c) {
+        Field[] fields = HASHCODE_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUHashCode classAnnotation =
+                    (JAUHashCode) c.getAnnotation(JAUHashCode.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            HASHCODE_FIELDS.put(c, fields);
+        }
+        return fields;
+    }
+
+    /**
+     * Returns all fields necessary to perform toString() computation for the
+     * specified class.
+     *
+     * @param c a class annotated with JAUToString
+     * @return fields
+     */
+    private static Field[] getFieldsForToString(Class c) {
+        Field[] fields = TO_STRING_FIELDS.get(c);
+        if (fields == null) {
+            fields = c.getDeclaredFields();
+
+            JAUToString classAnnotation =
+                    (JAUToString) c.getAnnotation(JAUToString.class);
+
+            boolean defaultInclude;
+            if (classAnnotation != null)
+                defaultInclude = classAnnotation.allFields();
+            else
+                defaultInclude = true;
+
+            List<Field> r = new ArrayList<Field>();
+            for (Field f: fields) {
+                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                    continue;
+
+                boolean include = defaultInclude;
+                JAUToString an = (JAUToString) f.getAnnotation(JAUToString.class);
+                if (an != null)
+                    include &= an.include();
+
+                if (include)
+                    r.add(f);
+            }
+            fields = r.toArray(new Field[r.size()]);
+            TO_STRING_FIELDS.put(c, fields);
+        }
+        return fields;
     }
 
     /**
@@ -967,8 +1219,16 @@ public class JAU {
             sb.append(ca.getCanonicalName()).append("@").
                     append(Integer.toHexString(
                     System.identityHashCode(a))).append("(");
-            toStringAnnotated(sb, a, ca,
-                    (JAUToString) ca.getAnnotation(JAUToString.class));
+            try {
+                toStringAnnotated(sb, a, ca,
+                        (JAUToString) ca.getAnnotation(JAUToString.class));
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            }
             sb.append(")");
         } else {
             sb.append(a.toString());
@@ -986,8 +1246,8 @@ public class JAU {
      * @return string representation
      */
     private static void toStringAnnotated(StringBuilder sb, Object a,
-            Class ca, JAUToString classAnnotation) {
-        Field[] fields = ca.getDeclaredFields();
+            Class ca, JAUToString classAnnotation)
+            throws IllegalArgumentException, IllegalAccessException {
         boolean first = true;
 
         ToStringType t;
@@ -996,45 +1256,21 @@ public class JAU {
         else
             t = ToStringType.ONE_LINE;
 
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-        
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUToString an = (JAUToString) f.getAnnotation(JAUToString.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                if (!first) {
-                    sb.append(",");
-                }
-                if (t == ToStringType.MANY_LINES) {
+        for (Field f: getFieldsForToString(ca)) {
+            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                f.setAccessible(true);
+            if (t == ToStringType.MANY_LINES) {
+                if (!first)
+                    sb.append(",\n    ");
+                else
                     sb.append("\n    ");
-                } else {
-                    if (!first)
-                        sb.append(" ");
-                }
-                sb.append(f.getName()).append('=');
-                try {
-                    fieldToString(sb, f, a);
-                    first = false;
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                }
+            } else {
+                if (!first)
+                    sb.append(", ");
             }
+            sb.append(f.getName()).append('=');
+                fieldToString(sb, f, a);
+                first = false;
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
             Class parentClass = ca.getSuperclass();
@@ -1092,21 +1328,27 @@ public class JAU {
      * @return true = the class can be used for automatic toString()
      */
     private static boolean annotatedForToMap(Class c) {
-        // firstly, check package annotation
-        Package p = c.getPackage();
-        boolean include = false;
-        if (p != null) {
-            JAUToMap annotation = p.getAnnotation(JAUToMap.class);
-            if (annotation != null && annotation.include())
-                include = true;
+        Boolean b = ANNOTATED_FOR_TOMAP.get(c);
+        if (b == null) {
+            // firstly, check package annotation
+            Package p = c.getPackage();
+            boolean include = false;
+            if (p != null) {
+                JAUToMap annotation = p.getAnnotation(JAUToMap.class);
+                if (annotation != null && annotation.include())
+                    include = true;
+            }
+
+            // class annotation is more important if present
+            JAUToMap annotation = (JAUToMap) c.getAnnotation(JAUToMap.class);
+            if (annotation != null)
+                include = annotation.include();
+
+            ANNOTATED_FOR_TOMAP.put(c, Boolean.valueOf(include));
+            return include;
+        } else {
+            return b.booleanValue();
         }
-
-        // class annotation is more important if present
-        JAUToMap annotation = (JAUToMap) c.getAnnotation(JAUToMap.class);
-        if (annotation != null)
-            include = annotation.include();
-
-        return include;
     }
 
     /**
@@ -1157,42 +1399,29 @@ public class JAU {
     private static void toMapAnnotated(Map<String, Object> map,
             Object a,
             Class ca, JAUToMap classAnnotation) {
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForToMap(ca);
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include;
-            if (classAnnotation != null)
-                include = classAnnotation.allFields();
-            else
-                include = true;
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    Object fa = f.get(a);
-                    String name;
-                    if (an != null) {
-                        name = an.name();
-                        if (name.length() == 0)
-                            name = f.getName();
-                    } else {
+            if (Modifier.isPrivate(f.getModifiers()))
+                f.setAccessible(true);
+            try {
+                Object fa = f.get(a);
+                String name;
+                if (an != null) {
+                    name = an.name();
+                    if (name.length() == 0)
                         name = f.getName();
-                    }
-
-                    map.put(name, fa);
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
+                } else {
+                    name = f.getName();
                 }
+
+                map.put(name, fa);
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
@@ -1253,42 +1482,30 @@ public class JAU {
     private static void fromMapAnnotated(Map<String, Object> map,
             Object a,
             Class ca, JAUToMap classAnnotation) {
-        Field[] fields = ca.getDeclaredFields();
+        Field[] fields = getFieldsForToMap(ca);
         for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include;
-            if (classAnnotation != null)
-                include = classAnnotation.allFields();
-            else
-                include = true;
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
-            if (an != null)
-                include &= an.include();
 
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()))
-                    f.setAccessible(true);
-                try {
-                    String name;
-                    if (an != null) {
-                        name = an.name();
-                        if (name.length() == 0)
-                            name = f.getName();
-                    } else {
+            if (Modifier.isPrivate(f.getModifiers()))
+                f.setAccessible(true);
+            try {
+                String name;
+                if (an != null) {
+                    name = an.name();
+                    if (name.length() == 0)
                         name = f.getName();
-                    }
-
-                    if (map.containsKey(name))
-                        f.set(a, map.get(name));
-                } catch (IllegalArgumentException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
-                } catch (IllegalAccessException ex) {
-                    throw (InternalError) new InternalError(
-                            ex.getMessage()).initCause(ex);
+                } else {
+                    name = f.getName();
                 }
+
+                if (map.containsKey(name))
+                    f.set(a, map.get(name));
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
             }
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
