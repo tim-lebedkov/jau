@@ -20,7 +20,7 @@ public class GGJAUPerfTest2 extends JapexDriverBase {
     }
 
     public static void main(String[] params) {
-        GGJAUPerfTest2 a = new GGJAUPerfTest2();
+        PerfTest a = new PerfTest();
         for (int i = 0; i < 1000000; i++) {
             JAU.toString(a);
         }
