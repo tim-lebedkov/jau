@@ -1,5 +1,6 @@
 package com.googlecode.jau;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -8,7 +9,6 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -16,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Annotation based implementation of common methods.
@@ -65,17 +66,26 @@ public class JAU {
     }
 
     /**
-     * Registeres a user defined Copier for a class.
+     * Registers a user defined Copier for a class.
+     * A copier cannot be registered for an array or a primitive type.
      * 
      * @param c a class
      * @param copier a copier for the class
      */
     public static <T> void registerCopier(Class<T> c, Copier<T> copier) {
+        if (c.isArray())
+            throw new IllegalArgumentException(
+                    "Cannot register a copier for an array");
+        if (c.isPrimitive())
+            throw new IllegalArgumentException(
+                    "Cannot register a copier for a primitive type");
         COPIERS.put(c, copier);
     }
 
     /**
-     * Registeres a user defined Comparator for a class
+     * Registers a user defined Comparator for a class
+     * A comparator cannot be registered for an array, a primitive type or
+     * a type that implements {@link Comparable}
      *
      * @param c a class
      * @param copier a copier for the class
@@ -84,21 +94,30 @@ public class JAU {
         if (c.isArray())
             throw new IllegalArgumentException(
                     "Cannot register a comparator for an array");
-        for (Class intf: c.getInterfaces())
-            if (intf == Comparable.class)
-                throw new IllegalArgumentException(
-                    "Cannot register a comparator for a class that implements " +
-                    "java.lang.Comparable");
+        if (c.isPrimitive())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for a primitive type");
+        if (Comparable.class.isAssignableFrom(c))
+            throw new IllegalArgumentException(
+                "Cannot register a comparator for a class that implements " +
+                "java.lang.Comparable");
         COMPARATORS.put(c, copier);
     }
 
     /**
-     * Registeres a user defined HashCoder for a class
+     * Registers a user defined HashCoder for a class.
+     * A coder cannot be registered for an array or a primitive type.
      *
      * @param c a class
      * @param hc a HashCoder for the class
      */
     public static <T> void registerHashCoder(Class<T> c, HashCoder<T> hc) {
+        if (c.isArray())
+            throw new IllegalArgumentException(
+                    "Cannot register a coder for an array");
+        if (c.isPrimitive())
+            throw new IllegalArgumentException(
+                    "Cannot register a coder for a primitive type");
         HASH_CODERS.put(c, hc);
     }
 
@@ -261,11 +280,8 @@ public class JAU {
             if (hc != null)
                 return hc.hashCode(a);
             else {
-                Class[] interfaces = ca.getInterfaces();
-                for (Class c: interfaces) {
-                    if (c == java.util.Map.class)
-                        return mapHashCode((Map) a);
-                }
+                if (Map.class.isAssignableFrom(ca))
+                    return mapHashCode((Map) a);
                 return a.hashCode();
             }
         }
@@ -451,6 +467,8 @@ public class JAU {
                     return false;
             }
             return true;
+        } else if (ca == String.class) {
+            return ((String) a).equals(b);
         } else if (annotatedForEquals(ca)) {
             return equalsAnnotated(a, b, ca, 
                     (JAUEquals) ca.getAnnotation(JAUEquals.class));
@@ -459,11 +477,8 @@ public class JAU {
             if (comparator != null)
                 return comparator.compare(a, b) == 0;
             else {
-                Class[] interfaces = ca.getInterfaces();
-                for (Class c: interfaces) {
-                    if (c == java.util.Map.class)
-                        return mapEquals((Map) a, (Map) b);
-                }
+                if (Map.class.isAssignableFrom(ca))
+                    return mapEquals((Map) a, (Map) b);
             }
             return a.equals(b);
         }
@@ -486,9 +501,7 @@ public class JAU {
             if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
                 f.setAccessible(true);
             try {
-                Object fa = f.get(a);
-                Object fb = f.get(b);
-                if (!equals(fa, fb))
+                if (!fieldEqual(f, a, b))
                     return false;
             } catch (IllegalArgumentException ex) {
                 throw (InternalError) new InternalError(
@@ -511,6 +524,39 @@ public class JAU {
         }
 
         return true;
+    }
+
+    /**
+     * Optimized version for comparing field values.
+     *
+     * @param f value of this field will be compared
+     * @param a first object
+     * @param b second object
+     */
+    private static boolean fieldEqual(Field f, Object a, Object b)
+            throws IllegalArgumentException, IllegalAccessException {
+        Class c = f.getType();
+        if (c.isPrimitive()) {
+            if (c == Byte.TYPE) {
+                return f.getByte(a) == f.getByte(b);
+            } else if (c == Short.TYPE) {
+                return f.getShort(a) == f.getShort(b);
+            } else if (c == Integer.TYPE) {
+                return f.getInt(a) == f.getInt(b);
+            } else if (c == Long.TYPE) {
+                return f.getLong(a) == f.getLong(b);
+            } else if (c == Float.TYPE) {
+                return Float.compare(f.getFloat(a), f.getFloat(b)) == 0;
+            } else if (c == Double.TYPE) {
+                return Double.compare(f.getDouble(a), f.getDouble(b)) == 0;
+            } else if (c == Character.TYPE) {
+                return f.getChar(a) == f.getChar(b);
+            } else {
+                return equals(f.get(a), f.get(b));
+            }
+        } else {
+            return equals(f.get(a), f.get(b));
+        }
     }
 
     /**
@@ -588,7 +634,8 @@ public class JAU {
             int lengtha = Array.getLength(a);
             int lengthb = Array.getLength(b);
             if (lengtha != lengthb)
-                throw new IllegalArgumentException("Cannot copy arrays with different lengths");
+                throw new IllegalArgumentException(
+                        "Cannot copy arrays with different lengths");
 
             for (int i = 0; i < lengtha; i++) {
                 Object ela = Array.get(a, i);
@@ -935,7 +982,7 @@ public class JAU {
      * @return string representation.
      */
     public static String toString(Object a) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(50);
         toString(sb, a);
         return sb.toString();
     }
@@ -1312,6 +1359,8 @@ public class JAU {
                 sb.append(f.getFloat(a));
             } else if (c == Double.TYPE) {
                 sb.append(f.getDouble(a));
+            } else if (c == Character.TYPE) {
+                sb.append(f.getChar(a));
             } else {
                 toString(sb, f.get(a));
             }
@@ -1534,6 +1583,7 @@ public class JAU {
      *  <li>Long.class</li>
      *  <li>Float.class</li>
      *  <li>Double.class</li>
+     *  <li>Character.class</li>
      *  <li>Class.class</li>
      *  <li>Object.class</li>
      *  <li>BigDecimal.class</li>
@@ -1547,7 +1597,8 @@ public class JAU {
     static boolean isImmutableClass(Class c) {
         return c == String.class || c == Byte.class || c == Short.class ||
                 c == Integer.class || c == Long.class || c == Float.class ||
-                c == Double.class || c == Class.class || c == Object.class ||
+                c == Double.class || c == Character.class ||
+                c == Class.class || c == Object.class ||
                 c == BigDecimal.class || c == BigInteger.class || c.isEnum();
     }
 }

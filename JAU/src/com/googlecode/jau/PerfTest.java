@@ -8,7 +8,7 @@ import com.sun.japex.TestCase;
  * http://java.dzone.com/tips/refactor-safe-tostringbuilder.
  */
 @JAUToString
-public class GGJAUPerfTest2 extends JapexDriverBase {
+public class PerfTest extends JapexDriverBase {
     private int x = 1;
     private int y = 2;
     private int z = 3;
@@ -20,9 +20,12 @@ public class GGJAUPerfTest2 extends JapexDriverBase {
     }
 
     public static void main(String[] params) {
-        GGJAUPerfTest2 a = new GGJAUPerfTest2();
-        for (int i = 0; i < 1000000; i++) {
-            JAU.toString(a);
+        PerfTest a = new PerfTest();
+        PerfTest b = new PerfTest();
+        b.x = 2;
+        for (int i = 0; i < 10000000; i++) {
+            //JAU.toString(a);
+            JAU.equals(a, b);
         }
     }
 }

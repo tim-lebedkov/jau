@@ -15,8 +15,7 @@
 
     <driver name="toStringManual">
         <param name="japex.driverClass" value="com.googlecode.jau.GGManualPerfTest2"/>
-        <param name="description" value="JAU.toString() performance"/>
+        <param name="description" value="Manually implemented toString() performance"/>
     </driver>
-
     <testCase name="test1"/>
 </testSuite>
