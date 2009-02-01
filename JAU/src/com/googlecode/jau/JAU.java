@@ -22,6 +22,12 @@ import java.util.Set;
  */
 public class JAU {
     /**
+     * -
+     */
+    private JAU() {
+    }
+
+    /**
      * Default comparator that uses 
      * {@link #compare(java.lang.Object, java.lang.Object) }
      * for object comparison.
@@ -45,7 +51,7 @@ public class JAU {
     };
 
     /**
-     * Default comparator that uses
+     * Default copier that uses
      * {@link #copy(java.lang.Object, java.lang.Object) }
      * for copying objects.
      */
@@ -56,12 +62,25 @@ public class JAU {
         }
     };
 
+    /**
+     * Default implementation of .toString() that uses
+     * {@link #toString(java.lang.Object) }.
+     */
+    public static final Stringifier STRINGIFIER = new Stringifier() {
+        @Override
+        public String toString(Object a) {
+            return JAU.toString(a);
+        }
+    };
+
     private static final Map<Class, Copier> COPIERS =
             new Hashtable<Class, Copier>();
     private static final Map<Class, Comparator> COMPARATORS =
             new Hashtable<Class, Comparator>();
     private static final Map<Class, HashCoder> HASH_CODERS =
             new Hashtable<Class, HashCoder>();
+    private static final Map<Class, Stringifier> STRINGIFIERS =
+            new Hashtable<Class, Stringifier>();
 
     private static final Map<Class, Boolean> ANNOTATED_FOR_TO_STRING = 
             new Hashtable<Class, Boolean>();
@@ -116,6 +135,28 @@ public class JAU {
     }
 
     /**
+     * Registers a user defined Stringifier for a class.
+     * An implementation for computing string representation
+     * cannot be registered for an
+     * array, an enum or a primitive type.
+     *
+     * @param c a class
+     * @param stringifier an implementation for computing string representation
+     */
+    public static <T> void registerStringifier(Class<T> c, Stringifier<T> stringifier) {
+        if (c.isArray())
+            throw new IllegalArgumentException(
+                    "Cannot register a stringifier for an array");
+        if (c.isPrimitive())
+            throw new IllegalArgumentException(
+                    "Cannot register a stringifier for a primitive type");
+        if (c.isEnum())
+            throw new IllegalArgumentException(
+                    "Cannot register a stringifier for an enum type");
+        STRINGIFIERS.put(c, stringifier);
+    }
+
+    /**
      * Registers a user defined Comparator for a class
      * A comparator cannot be registered for an array, a primitive type or
      * a type that implements {@link Comparable}
@@ -138,11 +179,11 @@ public class JAU {
     }
 
     /**
-     * Registers a user defined HashCoder for a class.
+     * Registers a user defined hash code algorithm for a class.
      * A coder cannot be registered for an array or a primitive type.
      *
      * @param c a class
-     * @param hc a HashCoder for the class
+     * @param hc a hash code algorithm for the class
      */
     public static <T> void registerHashCoder(Class<T> c, HashCoder<T> hc) {
         if (c.isArray())
@@ -157,7 +198,7 @@ public class JAU {
     /**
      * Returns the hash code value for this map.  The hash code of a map is
      * defined to be the sum of the hash codes of each entry in the map's
-     * <tt>entrySet()</tt> view.  This ensures that <tt>m1.equals(m2)</tt>
+     * <tt>entrySet()</tt> view. This ensures that <tt>m1.equals(m2)</tt>
      * implies that <tt>m1.hashCode()==m2.hashCode()</tt> for any two maps
      * <tt>m1</tt> and <tt>m2</tt>, as required by the general contract of
      * {@link Object#hashCode}.
@@ -186,8 +227,8 @@ public class JAU {
     }
 
     /**
-     * Check whether a class is annotated for automatic hashCode() (directly
-     * or through a package).
+     * Check whether a class is annotated for automatic computation of
+     * hash code (directly or through a package).
      *
      * @param c a class
      * @return true = the class can be used for automatic hashCode()
@@ -218,7 +259,7 @@ public class JAU {
 
     /**
      * Generates hash code for an object {@link Object#hashCode()}. Classes 
-     * should be annotated using @JAUHashCode (directly or through the 
+     * should be annotated using {@link JAUHashCode} (directly or through the
      * corresponding package) for automatic computation of hash code
      * via reflection. Another way
      * is to register a user defined object to compute hash codes via
@@ -228,13 +269,14 @@ public class JAU {
      *
      * Default HashCoders are registered for the following classes:
      * <ul>
-     *  <li>java.lang.StringBuffer</li>
-     *  <li>java.lang.StringBuilder</li>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
      * </ul>
      *
      * @param a object or null
      * @return generated hash code. If same fields in a class are marked
-     *     with @JAUEquals and @JAUHashCode, the value returned by this
+     *     with {@link JAUEquals} and {@link JAUHashCode},
+     *     the value returned by this
      *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
      *     are consistent.
      */
@@ -244,7 +286,7 @@ public class JAU {
 
     /**
      * Generates hash code for an object {@link Object#hashCode()}. Classes
-     * should be annotated using @JAUHashCode (directly or through the
+     * should be annotated using {@link JAUHashCode} (directly or through the
      * corresponding package) for automatic computation of hash code
      * via reflection. Another way
      * is to register a user defined object to compute hash codes via
@@ -254,8 +296,8 @@ public class JAU {
      *
      * Default HashCoders are registered for the following classes:
      * <ul>
-     *  <li>java.lang.StringBuffer</li>
-     *  <li>java.lang.StringBuilder</li>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
      * </ul>
      *
      * @param a an object or null
@@ -264,11 +306,13 @@ public class JAU {
      * @param multiplierNonZeroOddNumber
      *            a non-zero, odd number used as the multiplier
      * @return generated hash code. If same fields in a class are marked
-     *     with @JAUEquals and @JAUHashCode, the value returned by this
+     *     with {@link JAUEquals} and {@link JAUHashCode},
+     *     the value returned by this
      *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
      *     are consistent.
-     * @throws IllegalArgumentException if initialNonZeroOddNumber is 0 or
-     *     even or multiplierNonZeroOddNumber is 0 or even
+     * @throws IllegalArgumentException if <code>initialNonZeroOddNumber</code>
+     *     is 0 or
+     *     even or <code>multiplierNonZeroOddNumber</code> is 0 or even
      */
     public static int hashCode(Object a, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
@@ -321,7 +365,7 @@ public class JAU {
     }
 
     /**
-     * Computes hash code for an object annotated by @JAUEquals
+     * Computes hash code for an object annotated by {@link JAUEquals}
      *
      * @param a the object
      * @param ca only fields from this class (and superclasses of it)
@@ -1035,7 +1079,7 @@ public class JAU {
 
     /**
      * Generates string representation of an object ({@link Object#toString()}).
-     * Classes should be annotated using @JAUToString (directly or through the
+     * Classes should be annotated using JAUToString (directly or through the
      * corresponding package) for automatic computation of string
      * representation via reflection.
      *
@@ -1342,7 +1386,11 @@ public class JAU {
             }
             sb.append(")");
         } else {
-            sb.append(a.toString());
+            Stringifier s = STRINGIFIERS.get(ca);
+            if (s != null)
+                sb.append(s.toString(a));
+            else
+                sb.append(a.toString());
         }
     }
 
