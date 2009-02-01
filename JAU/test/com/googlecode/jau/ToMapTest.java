@@ -11,13 +11,13 @@ import static org.junit.Assert.*;
  * Tests for JAU.toMap()
  */
 public class ToMapTest {
-    @Test
+    @Test(expected=IllegalArgumentException.class)
     public void emptyNoAnnotation() {
         EmptyNoAnnotation a = new EmptyNoAnnotation();
         assertEquals(new HashMap(), JAU.toMap(a));
     }
 
-    @Test
+    @Test(expected=IllegalArgumentException.class)
     public void oneFieldNoAnnotation() {
         OneFieldNoAnnotation a = new OneFieldNoAnnotation();
         assertEquals(new HashMap(), JAU.toMap(a));
@@ -102,14 +102,34 @@ public class ToMapTest {
         assertEquals(m, JAU.toMap(a));
     }
 
-    @Test
-    public void simple() {
+    @Test(expected=IllegalArgumentException.class)
+    public void object() {
         Object a = new Object();
         HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(a));
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void integer() {
+        HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(new Integer(0)));
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void string() {
+        HashMap m = new HashMap();
         assertEquals(m, JAU.toMap("s"));
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void bigDecimal() {
+        HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(new BigDecimal(1023)));
+    }
+
+    @Test
+    public void null_() {
+        HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(null));
     }
 
