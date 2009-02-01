@@ -232,7 +232,7 @@ public class JAU {
      *  <li>java.lang.StringBuilder</li>
      * </ul>
      *
-     * @param an object or null
+     * @param a object or null
      * @return generated hash code. If same fields in a class are marked
      *     with @JAUEquals and @JAUHashCode, the value returned by this
      *     function and by {@link #equals(java.lang.Object, java.lang.Object)}
@@ -456,7 +456,7 @@ public class JAU {
      * should be annotated using @JAUEquals (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
-     * {@link #registerComparator(java.lang.Class, java.util.Comparator))}.
+     * {@link #registerComparator(java.lang.Class, java.util.Comparator) }
      * At last .equals(Object) is called.
      *
      * Static and synthetic fields will be ignored.
@@ -881,11 +881,11 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
+     * Compares 2 objects. Classes
      * should be annotated using JAUCompareTo (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
-     * {@link #registerComparator(java.lang.Class, java.util.Comparator))}.
+     * {@link JAU#registerComparator(java.lang.Class, java.util.Comparator)}.
      * Otherwise if
      * a class implements Comparable it's compareTo method is used.
      *
@@ -1042,7 +1042,7 @@ public class JAU {
      * Static and synthetic fields will be ignored.
      * Enums are represented as "com.example.EnumClass.VALUE"
      *
-     * @param an object or null
+     * @param a object or null
      * @return string representation.
      */
     public static String toString(Object a) {
@@ -1471,13 +1471,14 @@ public class JAU {
      *
      * Static and synthetic fields will be ignored.
      *
-     * @param an object or null
+     * @param a object or null
      * @return a map filled with the property values from <code>a</code>.
      *     An empty map is returned if <code>a</code> is null. Otherwise
      *     there will be an entry for every property from <code>a</code> with
      *     the value from the object. The returned map is mutable.
      * @throws IllegalArgumentException if <code>a</code> is an
-     *     enumeration value or an array
+     *     enumeration value or an array or the class of <code>a</code> is not
+     *     annotated with JAUToMap
      */
     public static Map<String, Object> toMap(Object a) {
         if (a == null)
@@ -1495,7 +1496,8 @@ public class JAU {
                     (JAUToMap) ca.getAnnotation(JAUToMap.class));
             return m;
         } else
-            return new HashMap();
+            throw new IllegalArgumentException("Class " + ca +
+                    " is not annotated with JAUToMap");
     }
 
     /**
@@ -1558,7 +1560,7 @@ public class JAU {
      *
      * Static and synthetic fields will be ignored.
      *
-     * @param an object or null
+     * @param a object or null
      * @param map a map filled with the property values, which will be
      *     stored in <code>a</code>.
      *     Nothing is done if <code>a</code> is null or the class of
