@@ -1,6 +1,5 @@
 package com.googlecode.jau;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -22,6 +21,41 @@ import java.util.Set;
  * Annotation based implementation of common methods.
  */
 public class JAU {
+    /**
+     * Default comparator that uses 
+     * {@link #compare(java.lang.Object, java.lang.Object) }
+     * for object comparison.
+     */
+    public static final Comparator COMPARATOR = new Comparator() {
+        @Override
+        public int compare(Object o1, Object o2) {
+            return JAU.compare(o1, o2);
+        }
+    };
+
+    /**
+     * Default comparator that uses
+     * {@link #hashCode(java.lang.Object) } for hash code computing.
+     */
+    public static final HashCoder HASHCODER = new HashCoder() {
+        @Override
+        public int hashCode(Object obj) {
+            return JAU.hashCode(obj);
+        }
+    };
+
+    /**
+     * Default comparator that uses
+     * {@link #copy(java.lang.Object, java.lang.Object) }
+     * for copying objects.
+     */
+    public static final Copier COPIER = new Copier() {
+        @Override
+        public void copy(Object a, Object b) {
+            JAU.copy(a, b);
+        }
+    };
+
     private static final Map<Class, Copier> COPIERS =
             new Hashtable<Class, Copier>();
     private static final Map<Class, Comparator> COMPARATORS =
@@ -54,7 +88,6 @@ public class JAU {
             new Hashtable<Class, Field[]>();
     private static final Map<Class, Field[]> TO_MAP_FIELDS =
             new Hashtable<Class, Field[]>();
-
 
     static {
         COPIERS.put(StringBuffer.class, new StringBufferCopier());
@@ -560,6 +593,39 @@ public class JAU {
     }
 
     /**
+     * Optimized version for comparing field values.
+     *
+     * @param f value of this field will be compared
+     * @param a first object
+     * @param b second object
+     */
+    private static int fieldCompare(Field f, Object a, Object b)
+            throws IllegalArgumentException, IllegalAccessException {
+        Class c = f.getType();
+        if (c.isPrimitive()) {
+            if (c == Byte.TYPE) {
+                return f.getByte(a) - f.getByte(b);
+            } else if (c == Short.TYPE) {
+                return f.getShort(a) - f.getShort(b);
+            } else if (c == Integer.TYPE) {
+                return f.getInt(a) - f.getInt(b);
+            } else if (c == Long.TYPE) {
+                return (int) (f.getLong(a) - f.getLong(b));
+            } else if (c == Float.TYPE) {
+                return Float.compare(f.getFloat(a), f.getFloat(b));
+            } else if (c == Double.TYPE) {
+                return Double.compare(f.getDouble(a), f.getDouble(b));
+            } else if (c == Character.TYPE) {
+                return f.getChar(a) - f.getChar(b);
+            } else {
+                return compare(f.get(a), f.get(b));
+            }
+        } else {
+            return compare(f.get(a), f.get(b));
+        }
+    }
+
+    /**
      * Check whether a class is annotated for automatic copy() (directly
      * or through a package).
      *
@@ -921,9 +987,7 @@ public class JAU {
             if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
                 f.setAccessible(true);
             try {
-                Object fa = f.get(a);
-                Object fb = f.get(b);
-                int r = compare(fa, fb);
+                int r = fieldCompare(f, a, b);
                 if (r != 0)
                     return r;
             } catch (IllegalArgumentException ex) {
