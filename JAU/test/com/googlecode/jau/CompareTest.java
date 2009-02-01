@@ -43,7 +43,7 @@ public class CompareTest {
         b.value = 0;
         a.value2 = 1;
         b.value2 = 2;
-        assertEquals(1, JAU.compare(a, b));
+        assertTrue(JAU.compare(a, b) > 0);
     }
 
     @Test
