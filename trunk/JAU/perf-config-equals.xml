@@ -9,12 +9,12 @@
     <param name="japex.runIterations" value="10000000"/>
 
     <driver name="equalsJAU">
-        <param name="japex.driverClass" value="com.googlecode.jau.EqualsJAUPerfTest2"/>
+        <param name="japex.driverClass" value="com.googlecode.jau.EqualsJAUPerfTest_"/>
         <param name="description" value="JAU.equals() performance"/>
     </driver>
 
     <driver name="equalsManual">
-        <param name="japex.driverClass" value="com.googlecode.jau.EqualsManualPerfTest2"/>
+        <param name="japex.driverClass" value="com.googlecode.jau.EqualsManualPerfTest_"/>
         <param name="description" value="Manually implemented equals() performance"/>
     </driver>
 

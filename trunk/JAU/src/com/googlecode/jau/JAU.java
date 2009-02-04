@@ -8,6 +8,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -341,13 +342,32 @@ public class JAU {
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
 
-            int result = initialNonZeroOddNumber * multiplierNonZeroOddNumber +
-                    ca.hashCode();
-            for (int i = 0; i < lengtha; i++) {
-                Object ela = Array.get(a, i);
-                result += hashCode(ela) * multiplierNonZeroOddNumber;
+            Class ct = ca.getComponentType();
+            if (ct == byte[].class)
+                return Arrays.hashCode((byte[]) a);
+            else if (ct == short[].class)
+                return Arrays.hashCode((short[]) a);
+            else if (ct == int[].class)
+                return Arrays.hashCode((int[]) a);
+            else if (ct == long[].class)
+                return Arrays.hashCode((long[]) a);
+            else if (ct == char[].class)
+                return Arrays.hashCode((char[]) a);
+            else if (ct == float[].class)
+                return Arrays.hashCode((float[]) a);
+            else if (ct == double[].class)
+                return Arrays.hashCode((double[]) a);
+            else if (ct == boolean[].class)
+                return Arrays.hashCode((boolean[]) a);
+            else {
+                int result = initialNonZeroOddNumber * multiplierNonZeroOddNumber +
+                        ca.hashCode();
+                for (int i = 0; i < lengtha; i++) {
+                    Object ela = Array.get(a, i);
+                    result += hashCode(ela) * multiplierNonZeroOddNumber;
+                }
+                return result;
             }
-            return result;
         } else if (annotatedForHashCode(ca)) {
             return hashCodeAnnotated(a, ca, 
                     (JAUHashCode) ca.getAnnotation(JAUHashCode.class),
@@ -537,13 +557,32 @@ public class JAU {
             if (lengtha != lengthb)
                 return false;
 
-            for (int i = 0; i < lengtha; i++) {
-                Object ela = Array.get(a, i);
-                Object elb = Array.get(b, i);
-                if (!equals(ela, elb))
-                    return false;
+            Class ct = ca.getComponentType();
+            if (ct == byte[].class)
+                return Arrays.equals((byte[]) a, (byte[]) b);
+            else if (ct == short[].class)
+                return Arrays.equals((short[]) a, (short[]) b);
+            else if (ct == int[].class)
+                return Arrays.equals((int[]) a, (int[]) b);
+            else if (ct == long[].class)
+                return Arrays.equals((long[]) a, (long[]) b);
+            else if (ct == char[].class)
+                return Arrays.equals((char[]) a, (char[]) b);
+            else if (ct == float[].class)
+                return Arrays.equals((float[]) a, (float[]) b);
+            else if (ct == double[].class)
+                return Arrays.equals((double[]) a, (double[]) b);
+            else if (ct == boolean[].class)
+                return Arrays.equals((boolean[]) a, (boolean[]) b);
+            else {
+                for (int i = 0; i < lengtha; i++) {
+                    Object ela = Array.get(a, i);
+                    Object elb = Array.get(b, i);
+                    if (!equals(ela, elb))
+                        return false;
+                }
+                return true;
             }
-            return true;
         } else if (ca == String.class) {
             return ((String) a).equals(b);
         } else if (annotatedForEquals(ca)) {
