@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Annotation based implementation of common methods.
@@ -77,18 +78,18 @@ public class JAU {
     private static final Map<Class, Copier> COPIERS =
             new Hashtable<Class, Copier>();
     private static final Map<Class, Comparator> COMPARATORS =
-            new Hashtable<Class, Comparator>();
+            new ConcurrentHashMap<Class, Comparator>();
     private static final Map<Class, HashCoder> HASH_CODERS =
             new Hashtable<Class, HashCoder>();
     private static final Map<Class, Stringifier> STRINGIFIERS =
-            new Hashtable<Class, Stringifier>();
+            new ConcurrentHashMap<Class, Stringifier>();
 
     private static final Map<Class, Boolean> ANNOTATED_FOR_TO_STRING = 
-            new Hashtable<Class, Boolean>();
+            new ConcurrentHashMap<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_HASHCODE =
             new Hashtable<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_EQUALS =
-            new Hashtable<Class, Boolean>();
+            new ConcurrentHashMap<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_COPY =
             new Hashtable<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_COMPARE =
@@ -97,9 +98,9 @@ public class JAU {
             new Hashtable<Class, Boolean>();
 
     private static final Map<Class, Field[]> TO_STRING_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> EQUALS_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> HASHCODE_FIELDS =
             new Hashtable<Class, Field[]>();
     private static final Map<Class, Field[]> COPY_FIELDS =

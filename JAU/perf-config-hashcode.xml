@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<testSuite name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuite">
+
+    <param name="japex.classPath" value="build/classes;build/test/classes"/>
+    
+    <param name="japex.resultUnit" value="ms"/>
+    <param name="japex.warmupIterations" value="20000"/>
+    <param name="japex.runIterations" value="10000000"/>
+
+    <driver name="hashCodeJAU">
+        <param name="japex.driverClass" value="com.googlecode.jau.HashCodeJAUPerfTest_"/>
+        <param name="description" value="JAU.equals() performance"/>
+    </driver>
+
+    <driver name="hashCodeManual">
+        <param name="japex.driverClass" value="com.googlecode.jau.HashCodeManualPerfTest_"/>
+        <param name="description" value="Manually implemented equals() performance"/>
+    </driver>
+
+    <testCase name="test1"/>
+</testSuite>

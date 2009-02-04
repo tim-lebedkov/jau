@@ -6,17 +6,16 @@ import com.sun.japex.TestCase;
 /**
  * Testing performance of .equals()
  */
-public class EqualsJAUPerfTest_ extends JapexDriverBase {
-    private static Object first, second;
-    private static boolean result;
+public class HashCodeManualPerfTest_ extends JapexDriverBase {
+    private static Object first;
+    private static int result;
 
     @Override
     public void prepare(TestCase testCase) {
         first = new RealClass();
-        second = new RealClass();
     }
 
     public void run(TestCase testCase) {
-        result = JAU.equals(first, second);
+        result = first.hashCode();
     }
 }
