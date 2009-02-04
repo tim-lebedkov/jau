@@ -6,7 +6,7 @@ import com.sun.japex.TestCase;
 /**
  * Testing performance of .equals()
  */
-public class EqualsJAUPerfTest2 extends JapexDriverBase {
+public class EqualsJAUPerfTest_ extends JapexDriverBase {
     private int x = 1;
     private int y = 2;
     private int z = 3;
@@ -18,7 +18,7 @@ public class EqualsJAUPerfTest2 extends JapexDriverBase {
 
     @Override
     public void prepare(TestCase testCase) {
-        second = new EqualsJAUPerfTest2();
+        second = new EqualsJAUPerfTest_();
     }
 
     public void run(TestCase testCase) {
