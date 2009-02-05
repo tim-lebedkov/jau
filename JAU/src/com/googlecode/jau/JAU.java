@@ -1,5 +1,6 @@
 package com.googlecode.jau;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -7,20 +8,22 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import sun.misc.Unsafe;
 
 /**
  * Annotation based implementation of common methods.
+ * All methods in this class are thread-safe.
  */
 public class JAU {
     /**
@@ -75,40 +78,82 @@ public class JAU {
         }
     };
 
+    private static final int INTEGER_TYPE = 0;
+    private static final int BYTE_TYPE = 1;
+    private static final int SHORT_TYPE = 2;
+    private static final int LONG_TYPE = 3;
+    private static final int FLOAT_TYPE = 4;
+    private static final int DOUBLE_TYPE = 5;
+    private static final int CHARACTER_TYPE = 6;
+    private static final int OTHER_TYPE = 7;
+
+    /**
+     * Information about a class.
+     */
+    private static final class ClassInfo {
+        /** is the class annotated (possibly through the package)? */
+        public boolean annotated;
+
+        /** annotation for the class */
+        public Annotation annotation;
+
+        /** fields used for .equals() */
+        public Field[] fields;
+
+        /** offsets for Unsafe */
+        public long[] offsets;
+
+        /** types of fields */
+        public int[] types;
+    }
+
+    /**
+     * Getter for Unsafe
+     */
+    private static Unsafe getUnsafe() {
+        try {
+            Field field = Unsafe.class.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            return (Unsafe)field.get(null);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+    
+    private static final Unsafe UNSAFE = getUnsafe();
+
     private static final Map<Class, Copier> COPIERS =
-            new Hashtable<Class, Copier>();
+            new ConcurrentHashMap<Class, Copier>();
     private static final Map<Class, Comparator> COMPARATORS =
             new ConcurrentHashMap<Class, Comparator>();
     private static final Map<Class, HashCoder> HASH_CODERS =
-            new Hashtable<Class, HashCoder>();
+            new ConcurrentHashMap<Class, HashCoder>();
     private static final Map<Class, Stringifier> STRINGIFIERS =
             new ConcurrentHashMap<Class, Stringifier>();
 
     private static final Map<Class, Boolean> ANNOTATED_FOR_TO_STRING = 
             new ConcurrentHashMap<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_HASHCODE =
-            new Hashtable<Class, Boolean>();
-    private static final Map<Class, Boolean> ANNOTATED_FOR_EQUALS =
             new ConcurrentHashMap<Class, Boolean>();
+    private static final Map<Class, ClassInfo> ANNOTATED_FOR_EQUALS =
+            new ConcurrentHashMap<Class, ClassInfo>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_COPY =
-            new Hashtable<Class, Boolean>();
+            new ConcurrentHashMap<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_COMPARE =
-            new Hashtable<Class, Boolean>();
+            new ConcurrentHashMap<Class, Boolean>();
     private static final Map<Class, Boolean> ANNOTATED_FOR_TOMAP =
-            new Hashtable<Class, Boolean>();
+            new ConcurrentHashMap<Class, Boolean>();
 
     private static final Map<Class, Field[]> TO_STRING_FIELDS =
             new ConcurrentHashMap<Class, Field[]>();
-    private static final Map<Class, Field[]> EQUALS_FIELDS =
-            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> HASHCODE_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> COPY_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> COMPARE_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
     private static final Map<Class, Field[]> TO_MAP_FIELDS =
-            new Hashtable<Class, Field[]>();
+            new ConcurrentHashMap<Class, Field[]>();
 
     static {
         COPIERS.put(StringBuffer.class, new StringBufferCopier());
@@ -490,10 +535,10 @@ public class JAU {
      * or through a package).
      *
      * @param c a class
-     * @return true = the class can be used for automatic equals()
+     * @return information about annotation
      */
-    private static boolean annotatedForEquals(Class c) {
-        Boolean b = ANNOTATED_FOR_EQUALS.get(c);
+    private static ClassInfo annotatedForEquals(Class c) {
+        ClassInfo b = ANNOTATED_FOR_EQUALS.get(c);
         if (b == null) {
             // firstly, check package annotation
             Package p = c.getPackage();
@@ -509,10 +554,37 @@ public class JAU {
             if (annotation != null)
                 include = annotation.include();
 
-            ANNOTATED_FOR_EQUALS.put(c, Boolean.valueOf(include));
-            return include;
+            ClassInfo ci = new ClassInfo();
+            ci.annotated = include;
+            ci.annotation = annotation;
+            ci.fields = getFieldsForEquals(c);
+            ci.offsets = new long[ci.fields.length];
+            ci.types = new int[ci.fields.length];
+            for (int i = 0; i < ci.fields.length; i++) {
+                ci.offsets[i] = UNSAFE.objectFieldOffset(ci.fields[i]);
+                Class fc = ci.fields[i].getType();
+                if (fc == Integer.TYPE) {
+                    ci.types[i] = INTEGER_TYPE;
+                } else if (fc == Byte.TYPE) {
+                    ci.types[i] = BYTE_TYPE;
+                } else if (fc == Short.TYPE) {
+                    ci.types[i] = SHORT_TYPE;
+                } else if (fc == Long.TYPE) {
+                    ci.types[i] = LONG_TYPE;
+                } else if (fc == Float.TYPE) {
+                    ci.types[i] = FLOAT_TYPE;
+                } else if (fc == Double.TYPE) {
+                    ci.types[i] = DOUBLE_TYPE;
+                } else if (fc == Character.TYPE) {
+                    ci.types[i] = CHARACTER_TYPE;
+                } else {
+                    ci.types[i] = OTHER_TYPE;
+                }
+            }
+            ANNOTATED_FOR_EQUALS.put(c, ci);
+            return ci;
         } else {
-            return b.booleanValue();
+            return b;
         }
     }
 
@@ -552,7 +624,18 @@ public class JAU {
         if (ca != cb)
             return false;
 
-        if (ca.isArray()) {
+        ClassInfo ci = annotatedForEquals(ca);
+        if (ci.annotated) {
+            try {
+                return equalsAnnotated(a, b, ca, ci);
+            } catch (IllegalArgumentException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            } catch (IllegalAccessException ex) {
+                throw (InternalError) new InternalError(
+                        ex.getMessage()).initCause(ex);
+            }
+        } else if (ca.isArray()) {
             int lengtha = Array.getLength(a);
             int lengthb = Array.getLength(b);
             if (lengtha != lengthb)
@@ -586,9 +669,6 @@ public class JAU {
             }
         } else if (ca == String.class) {
             return ((String) a).equals(b);
-        } else if (annotatedForEquals(ca)) {
-            return equalsAnnotated(a, b, ca, 
-                    (JAUEquals) ca.getAnnotation(JAUEquals.class));
         } else {
             Comparator comparator = COMPARATORS.get(ca);
             if (comparator != null)
@@ -608,72 +688,102 @@ public class JAU {
      * @param b second object
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
-     * @param classAnnotation annotation of the class or null
+     * @param ci information about the class
      * @return true = equals
      */
     private static boolean equalsAnnotated(Object a, Object b,
-            Class ca, JAUEquals classAnnotation) {
-        Field[] fields = getFieldsForEquals(ca);
-        for (Field f: fields) {
-            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                f.setAccessible(true);
-            try {
-                if (!fieldEqual(f, a, b))
-                    return false;
-            } catch (IllegalArgumentException ex) {
-                throw (InternalError) new InternalError(
-                        ex.getMessage()).initCause(ex);
-            } catch (IllegalAccessException ex) {
-                throw (InternalError) new InternalError(
-                        ex.getMessage()).initCause(ex);
+            Class ca, ClassInfo ci) throws IllegalArgumentException, IllegalAccessException {
+        if (UNSAFE == null) {
+            for (Field f: ci.fields) {
+                Class c = f.getType();
+                if (c == Integer.TYPE) {
+                    if (f.getInt(a) != f.getInt(b))
+                        return false;
+                } else if (c == Byte.TYPE) {
+                    if (f.getByte(a) != f.getByte(b))
+                        return false;
+                } else if (c == Short.TYPE) {
+                    if (f.getShort(a) != f.getShort(b))
+                        return false;
+                } else if (c == Long.TYPE) {
+                    if (f.getLong(a) != f.getLong(b))
+                        return false;
+                } else if (c == Float.TYPE) {
+                    if (Float.floatToIntBits(f.getFloat(a)) !=
+                            Float.floatToIntBits(f.getFloat(b)))
+                        return false;
+                } else if (c == Double.TYPE) {
+                    if (Double.doubleToLongBits(f.getDouble(a)) !=
+                            Double.doubleToLongBits(f.getDouble(b)))
+                        return false;
+                } else if (c == Character.TYPE) {
+                    if (f.getChar(a) != f.getChar(b))
+                        return false;
+                } else {
+                    if (!equals(f.get(a), f.get(b)))
+                        return false;
+                }
+            }
+        } else {
+            for (int i = 0; i< ci.offsets.length; i++) {
+                long offset = ci.offsets[i];
+                switch (ci.types[i]) {
+                    case INTEGER_TYPE:
+                        if (UNSAFE.getInt(a, offset) != UNSAFE.getInt(b, offset))
+                            return false;
+                        else
+                            break;
+                    case BYTE_TYPE:
+                        if (UNSAFE.getByte(a, offset) != UNSAFE.getByte(b, offset))
+                            return false;
+                        else
+                            break;
+                    case SHORT_TYPE:
+                        if (UNSAFE.getShort(a, offset) != UNSAFE.getShort(b, offset))
+                            return false;
+                        else
+                            break;
+                    case LONG_TYPE:
+                        if (UNSAFE.getLong(a, offset) != UNSAFE.getLong(b, offset))
+                            return false;
+                        else
+                            break;
+                    case FLOAT_TYPE:
+                        if (Float.floatToIntBits(UNSAFE.getFloat(a, offset)) !=
+                                Float.floatToIntBits(UNSAFE.getFloat(b, offset)))
+                            return false;
+                        else
+                            break;
+                    case DOUBLE_TYPE:
+                        if (Double.doubleToLongBits(UNSAFE.getDouble(a, offset)) !=
+                                Double.doubleToLongBits(UNSAFE.getDouble(b, offset)))
+                            return false;
+                        else
+                            break;
+                    case CHARACTER_TYPE:
+                        if (UNSAFE.getChar(a, offset) != UNSAFE.getChar(b, offset))
+                            return false;
+                        else
+                            break;
+                    default:
+                        if (!equals(UNSAFE.getObject(a, offset), UNSAFE.getObject(b, offset)))
+                            return false;
+                }
             }
         }
-        if (classAnnotation == null || classAnnotation.inherited()) {
+        if (ci.annotation == null || ((JAUEquals) ci.annotation).inherited()) {
             Class parentClass = ca.getSuperclass();
             if (parentClass == null || parentClass == Object.class)
                 return true;
 
-            if (annotatedForEquals(parentClass))
-                return equalsAnnotated(a, b, parentClass,
-                        (JAUEquals) parentClass.getAnnotation(JAUEquals.class));
+            ClassInfo cip = annotatedForEquals(parentClass);
+            if (cip.annotated)
+                return equalsAnnotated(a, b, parentClass, cip);
             else
                 return false;
         }
 
         return true;
-    }
-
-    /**
-     * Optimized version for comparing field values.
-     *
-     * @param f value of this field will be compared
-     * @param a first object
-     * @param b second object
-     */
-    private static boolean fieldEqual(Field f, Object a, Object b)
-            throws IllegalArgumentException, IllegalAccessException {
-        Class c = f.getType();
-        if (c.isPrimitive()) {
-            if (c == Byte.TYPE) {
-                return f.getByte(a) == f.getByte(b);
-            } else if (c == Short.TYPE) {
-                return f.getShort(a) == f.getShort(b);
-            } else if (c == Integer.TYPE) {
-                return f.getInt(a) == f.getInt(b);
-            } else if (c == Long.TYPE) {
-                return f.getLong(a) == f.getLong(b);
-            } else if (c == Float.TYPE) {
-                return Float.compare(f.getFloat(a), f.getFloat(b)) == 0;
-            } else if (c == Double.TYPE) {
-                return Double.compare(f.getDouble(a), f.getDouble(b)) == 0;
-            } else if (c == Character.TYPE) {
-                return f.getChar(a) == f.getChar(b);
-            } else {
-                return equals(f.get(a), f.get(b));
-            }
-        } else {
-            return equals(f.get(a), f.get(b));
-        }
     }
 
     /**
@@ -1143,35 +1253,33 @@ public class JAU {
      * @return fields
      */
     private static Field[] getFieldsForEquals(Class c) {
-        Field[] fields = EQUALS_FIELDS.get(c);
-        if (fields == null) {
-            fields = c.getDeclaredFields();
+        Field[] fields = c.getDeclaredFields();
+        JAUEquals classAnnotation =
+                (JAUEquals) c.getAnnotation(JAUEquals.class);
 
-            JAUEquals classAnnotation =
-                    (JAUEquals) c.getAnnotation(JAUEquals.class);
+        boolean defaultInclude;
+        if (classAnnotation != null)
+            defaultInclude = classAnnotation.allFields();
+        else
+            defaultInclude = true;
 
-            boolean defaultInclude;
-            if (classAnnotation != null)
-                defaultInclude = classAnnotation.allFields();
-            else
-                defaultInclude = true;
+        List<Field> r = new ArrayList<Field>();
+        for (Field f: fields) {
+            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
+                continue;
 
-            List<Field> r = new ArrayList<Field>();
-            for (Field f: fields) {
-                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                    continue;
+            boolean include = defaultInclude;
+            JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
+            if (an != null)
+                include &= an.include();
 
-                boolean include = defaultInclude;
-                JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
-                if (an != null)
-                    include &= an.include();
-
-                if (include)
-                    r.add(f);
+            if (include) {
+                r.add(f);
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
             }
-            fields = r.toArray(new Field[r.size()]);
-            EQUALS_FIELDS.put(c, fields);
         }
+        fields = r.toArray(new Field[r.size()]);
         return fields;
     }
 

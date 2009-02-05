@@ -74,22 +74,22 @@
     -->
 
     <target name="perf-tests" depends="init,compile-test">
-        <!--
         <java dir="." fork="true" classname="com.sun.japex.Japex">
             <classpath path="C:\Dokumente und Einstellungen\tim\Eigene Dateien\libs\japex-1.1\lib\ant.jar;build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
             <arg line="perf-config-equals-int.xml"/>
         </java>
-        -->
         <!--
         <java dir="." fork="true" classname="com.sun.japex.Japex">
             <classpath path="C:\Dokumente und Einstellungen\tim\Eigene Dateien\libs\japex-1.1\lib\ant.jar;build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
             <arg line="perf-config-tostring.xml/"/>
         </java>
         -->
+        <!--
         <java dir="." fork="true" classname="com.sun.japex.Japex">
             <classpath path="C:\Dokumente und Einstellungen\tim\Eigene Dateien\libs\japex-1.1\lib\ant.jar;build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>
             <arg line="perf-config-equals.xml/"/>
         </java>
+        -->
         <!--
         <java dir="." fork="true" classname="com.sun.japex.Japex">
             <classpath path="C:\Dokumente und Einstellungen\tim\Eigene Dateien\libs\japex-1.1\lib\ant.jar;build\test\classes:${javac.test.classpath};${build.test.classes.dir}"/>

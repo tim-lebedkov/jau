@@ -16,6 +16,11 @@ public class EqualsJAUPerfTest_ extends JapexDriverBase {
         second = new RealClass();
     }
 
+    @Override
+    public void warmup(TestCase testCase) {
+        result = JAU.equals(first, second);
+    }
+
     public void run(TestCase testCase) {
         result = JAU.equals(first, second);
     }
