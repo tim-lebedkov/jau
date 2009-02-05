@@ -12,8 +12,13 @@ public class EqualsManualPerfTest_ extends JapexDriverBase {
 
     @Override
     public void prepare(TestCase testCase) {
-        first = new EqualsManualPerfTest_();
-        second = new EqualsManualPerfTest_();
+        first = new RealClass();
+        second = new RealClass();
+    }
+
+    @Override
+    public void warmup(TestCase testCase) {
+        result = first.equals(second);
     }
 
     public void run(TestCase testCase) {
