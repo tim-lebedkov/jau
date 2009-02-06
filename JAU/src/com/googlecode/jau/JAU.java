@@ -12,11 +12,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import sun.misc.Unsafe;
 
@@ -174,7 +172,9 @@ public class JAU {
 
     private static final Map<Class, Copier> COPIERS =
             new ConcurrentHashMap<Class, Copier>();
-    private static final Map<Class, Comparator> COMPARATORS =
+    private static final Map<Class, Comparator> COMPARATORS_COMPARETO =
+            new ConcurrentHashMap<Class, Comparator>();
+    private static final Map<Class, Comparator> COMPARATORS_EQUALS =
             new ConcurrentHashMap<Class, Comparator>();
     private static final Map<Class, HashCoder> HASH_CODERS =
             new ConcurrentHashMap<Class, HashCoder>();
@@ -197,16 +197,26 @@ public class JAU {
     static {
         COPIERS.put(StringBuffer.class, new StringBufferCopier());
         COPIERS.put(StringBuilder.class, new StringBuilderCopier());
-        COMPARATORS.put(StringBuffer.class, new StringBufferComparator());
-        COMPARATORS.put(StringBuilder.class, new StringBuilderComparator());
+        COMPARATORS_COMPARETO.put(StringBuffer.class, new StringBufferComparator());
+        COMPARATORS_COMPARETO.put(StringBuilder.class, new StringBuilderComparator());
+        COMPARATORS_EQUALS.put(StringBuffer.class, new StringBufferComparator());
+        COMPARATORS_EQUALS.put(StringBuilder.class, new StringBuilderComparator());
+        COMPARATORS_EQUALS.put(Hashtable.class, MapComparator.INSTANCE);
+        COMPARATORS_EQUALS.put(HashMap.class, MapComparator.INSTANCE);
         HASH_CODERS.put(StringBuffer.class, new StringBufferHashCoder());
         HASH_CODERS.put(StringBuilder.class, new StringBuilderHashCoder());
+        HASH_CODERS.put(Hashtable.class, MapHashCoder.INSTANCE);
+        HASH_CODERS.put(HashMap.class, MapHashCoder.INSTANCE);
     }
 
     /**
      * Registers a user defined Copier for a class.
      * A copier cannot be registered for an array or a primitive type.
      * 
+     * Copiers for the following classes are defined by default:
+     *     java.lang.StringBuffer
+     *     java.lang.StringBuilder
+     *
      * @param c a class
      * @param copier a copier for the class
      */
@@ -247,6 +257,10 @@ public class JAU {
      * A comparator cannot be registered for an array, a primitive type or
      * a type that implements {@link Comparable}
      *
+     * Comparators for the following classes are defined by default:
+     *     java.lang.StringBuffer
+     *     java.lang.StringBuilder
+     * 
      * @param c a class
      * @param copier a copier for the class
      */
@@ -261,13 +275,48 @@ public class JAU {
             throw new IllegalArgumentException(
                 "Cannot register a comparator for a class that implements " +
                 "java.lang.Comparable");
-        COMPARATORS.put(c, copier);
+        COMPARATORS_COMPARETO.put(c, copier);
+    }
+
+    /**
+     * Registers a user defined Comparator for a class that is used in
+     * JAU.equals.
+     * A comparator cannot be registered for an array, a primitive type or
+     * a type that implements {@link Comparable}
+     *
+     * Comparators for the following classes are defined by default:
+     *     java.lang.StringBuffer
+     *     java.lang.StringBuilder
+     *     java.util.Hashtable
+     *     java.util.HashMap
+     *
+     * @param c a class
+     * @param copier a copier for the class
+     */
+    public static <T> void registerEqualsComparator(Class<T> c, Comparator<T> copier) {
+        if (c.isArray())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for an array");
+        if (c.isPrimitive())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for a primitive type");
+        if (Comparable.class.isAssignableFrom(c))
+            throw new IllegalArgumentException(
+                "Cannot register a comparator for a class that implements " +
+                "java.lang.Comparable");
+        COMPARATORS_EQUALS.put(c, copier);
     }
 
     /**
      * Registers a user defined hash code algorithm for a class.
      * A coder cannot be registered for an array or a primitive type.
      *
+     * HashCoders for the following classes are defined by default:
+     *     java.lang.StringBuffer
+     *     java.lang.StringBuilder
+     *     java.util.Hashtable
+     *     java.util.HashMap
+     * 
      * @param c a class
      * @param hc a hash code algorithm for the class
      */
@@ -279,37 +328,6 @@ public class JAU {
             throw new IllegalArgumentException(
                     "Cannot register a coder for a primitive type");
         HASH_CODERS.put(c, hc);
-    }
-
-    /**
-     * Returns the hash code value for this map.  The hash code of a map is
-     * defined to be the sum of the hash codes of each entry in the map's
-     * <tt>entrySet()</tt> view. This ensures that <tt>m1.equals(m2)</tt>
-     * implies that <tt>m1.hashCode()==m2.hashCode()</tt> for any two maps
-     * <tt>m1</tt> and <tt>m2</tt>, as required by the general contract of
-     * {@link Object#hashCode}.
-     *
-     * <p>This implementation iterates over <tt>entrySet()</tt>, calling
-     * {@link Map.Entry#hashCode hashCode()} on each element (entry) in the
-     * set, and adding up the results.
-     *
-     * @return the hash code value for this map
-     * @see Map.Entry#hashCode()
-     * @see Object#equals(Object)
-     * @see Set#equals(Object)
-     */
-    private static <K, V> int mapHashCode(Map<K, V> map) {
-        int h = 0;
-        Iterator<Entry<K,V>> i = map.entrySet().iterator();
-        while (i.hasNext()) {
-            Entry<K, V> next = i.next();
-            Object key = next.getKey();
-            Object value = next.getValue();
-            int hc = (key == null ? 0 : hashCode(key)) ^
-                (value == null ? 0 : hashCode(value));
-            h += hc;
-        }
-        return h;
     }
 
     /**
@@ -426,18 +444,15 @@ public class JAU {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_HASHCODE, ca,
                     JAUHashCode.class, JAU_HASHCODE_INCLUDE);
             if (ci.annotated) {
-                return hashCodeAnnotated(a, ca,
+                return hashCodeAnnotated(a, ci, ca,
                         (JAUHashCode) ci.annotation,
                         initialNonZeroOddNumber, multiplierNonZeroOddNumber);
             } else {
                 HashCoder hc = HASH_CODERS.get(ca);
                 if (hc != null)
                     return hc.hashCode(a);
-                else {
-                    if (Map.class.isAssignableFrom(ca))
-                        return mapHashCode((Map) a);
+                else 
                     return a.hashCode();
-                }
             }
         }
     }
@@ -446,6 +461,7 @@ public class JAU {
      * Computes hash code for an object annotated by {@link JAUEquals}
      *
      * @param a the object
+     * @param ci class information
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
@@ -455,17 +471,46 @@ public class JAU {
      *            a non-zero, odd number used as the multiplier
      * @return hash code
      */
-    private static int hashCodeAnnotated(Object a,
+    private static int hashCodeAnnotated(Object a, ClassInfo ci,
             Class ca, JAUHashCode classAnnotation, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
         Field[] fields = getFieldsForHashCode(ca);
         int result = initialNonZeroOddNumber;
-        for (Field f: fields) {
-            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                f.setAccessible(true);
+        for (int i = 0; i < fields.length; i++) {
+            Field f = fields[i];
             try {
-                Object fa = f.get(a);
-                result += multiplierNonZeroOddNumber * hashCode(fa);
+                switch (ci.types[i]) {
+                    case INTEGER_TYPE:
+                        result += multiplierNonZeroOddNumber * f.getInt(a);
+                        break;
+                    case BYTE_TYPE:
+                        result += multiplierNonZeroOddNumber * f.getByte(a);
+                        break;
+                    case SHORT_TYPE:
+                        result += multiplierNonZeroOddNumber * f.getShort(a);
+                        break;
+                    case LONG_TYPE:
+                        long value = f.getLong(a);
+                        result += multiplierNonZeroOddNumber * 
+                                (int)(value ^ (value >>> 32));
+                        break;
+                    case FLOAT_TYPE:
+                        result += multiplierNonZeroOddNumber *
+                                Float.floatToIntBits(f.getFloat(a));
+                        break;
+                    case DOUBLE_TYPE:
+                        long bits = Double.doubleToLongBits(f.getDouble(a));
+                        result += multiplierNonZeroOddNumber *
+                                (int)(bits ^ (bits >>> 32));
+                        break;
+                    case CHARACTER_TYPE:
+                        result += multiplierNonZeroOddNumber *
+                                (int) (f.getChar(a));
+                        break;
+                    default:
+                        result += multiplierNonZeroOddNumber * 
+                                hashCode(f.get(a));
+                }
             } catch (IllegalArgumentException ex) {
                 throw (InternalError) new InternalError(
                         ex.getMessage()).initCause(ex);
@@ -482,7 +527,7 @@ public class JAU {
             ClassInfo parentci = annotatedFor(ANNOTATED_FOR_HASHCODE,
                     parentClass, JAUHashCode.class, JAU_HASHCODE_INCLUDE);
             if (parentci.annotated)
-                return result + hashCodeAnnotated(a, parentClass,
+                return result + hashCodeAnnotated(a, parentci, parentClass,
                         (JAUHashCode) parentci.annotation,
                         initialNonZeroOddNumber, multiplierNonZeroOddNumber);
             else
@@ -490,58 +535,6 @@ public class JAU {
         }
 
         return result;
-    }
-
-    /**
-     * Compares the specified object with this map for equality.  Returns
-     * <tt>true</tt> if the given object is also a map and the two maps
-     * represent the same mappings.  More formally, two maps <tt>m1</tt> and
-     * <tt>m2</tt> represent the same mappings if
-     * <tt>m1.entrySet().equals(m2.entrySet())</tt>.  This ensures that the
-     * <tt>equals</tt> method works properly across different implementations
-     * of the <tt>Map</tt> interface.
-     *
-     * <p>This implementation first checks if the specified object is this map;
-     * if so it returns <tt>true</tt>.  Then, it checks if the specified
-     * object is a map whose size is identical to the size of this map; if
-     * not, it returns <tt>false</tt>.  If so, it iterates over this map's
-     * <tt>entrySet</tt> collection, and checks that the specified map
-     * contains each mapping that this map contains.  If the specified map
-     * fails to contain such a mapping, <tt>false</tt> is returned.  If the
-     * iteration completes, <tt>true</tt> is returned.
-     *
-     * @param o object to be compared for equality with this map
-     * @return <tt>true</tt> if the specified object is equal to this map
-     */
-    private static <K, V> boolean mapEquals(Map<K, V> a, Map<K, V> o) {
-        Map<K, V> m = (Map<K, V>) o;
-        if (m.size() != a.size()) {
-            return false;
-        }
-
-        try {
-            Iterator<Entry<K, V>> i = a.entrySet().iterator();
-            while (i.hasNext()) {
-                Entry<K, V> e = i.next();
-                K key = e.getKey();
-                V value = e.getValue();
-                if (value == null) {
-                    if (!(m.get(key) == null && m.containsKey(key))) {
-                        return false;
-                    }
-                } else {
-                    if (!equals(value, m.get(key))) {
-                        return false;
-                    }
-                }
-            }
-        } catch (ClassCastException unused) {
-            return false;
-        } catch (NullPointerException unused) {
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -690,14 +683,11 @@ public class JAU {
         } else if (ca == String.class) {
             return ((String) a).equals(b);
         } else {
-            Comparator comparator = COMPARATORS.get(ca);
+            Comparator comparator = COMPARATORS_EQUALS.get(ca);
             if (comparator != null)
                 return comparator.compare(a, b) == 0;
-            else {
-                if (Map.class.isAssignableFrom(ca))
-                    return mapEquals((Map) a, (Map) b);
-            }
-            return a.equals(b);
+            else
+                return a.equals(b);
         }
     }
 
@@ -1011,8 +1001,6 @@ public class JAU {
             Class ca, JAUCopy classAnnotation) {
         Field[] fields = getFieldsForCopy(ca);
         for (Field f: fields) {
-            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                f.setAccessible(true);
             try {
                 Object fa = f.get(a);
                 if (f.getType().isPrimitive())
@@ -1109,7 +1097,7 @@ public class JAU {
             } else if (a instanceof Comparable) {
                 return ((Comparable) a).compareTo(b);
             } else {
-                Comparator comparator = COMPARATORS.get(ca);
+                Comparator comparator = COMPARATORS_COMPARETO.get(ca);
                 if (comparator != null)
                     return comparator.compare(a, b);
                 else
@@ -1147,10 +1135,8 @@ public class JAU {
         if (inheritedCompare != 0)
             return inheritedCompare;
 
-        Field[] fields = getFieldsForCompare(ca);
+        Field[] fields = getFieldsForCompareTo(ca);
         for (Field f: fields) {
-            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                f.setAccessible(true);
             try {
                 int r = fieldCompare(f, a, b);
                 if (r != 0)
@@ -1252,8 +1238,11 @@ public class JAU {
             if (an != null)
                 include &= an.include();
 
-            if (include)
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
                 r.add(f);
+            }
         }
         fields = r.toArray(new Field[r.size()]);
         return fields;
@@ -1266,7 +1255,7 @@ public class JAU {
      * @param c a class annotated with JAUCompareTo
      * @return fields
      */
-    private static Field[] getFieldsForCompare(Class c) {
+    private static Field[] getFieldsForCompareTo(Class c) {
         Field[] fields = c.getDeclaredFields();
 
         JAUCompareTo classAnnotation =
@@ -1288,8 +1277,11 @@ public class JAU {
             if (an != null)
                 include &= an.include();
 
-            if (include)
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
                 r.add(f);
+            }
         }
         fields = r.toArray(new Field[r.size()]);
         return fields;
@@ -1324,8 +1316,11 @@ public class JAU {
             if (an != null)
                 include &= an.include();
 
-            if (include)
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
                 r.add(f);
+            }
         }
         fields = r.toArray(new Field[r.size()]);
         return fields;
@@ -1360,8 +1355,11 @@ public class JAU {
             if (an != null)
                 include &= an.include();
 
-            if (include)
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
                 r.add(f);
+            }
         }
         fields = r.toArray(new Field[r.size()]);
         return fields;
@@ -1396,8 +1394,11 @@ public class JAU {
             if (an != null)
                 include &= an.include();
 
-            if (include)
+            if (include) {
+                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
+                    f.setAccessible(true);
                 r.add(f);
+            }
         }
         fields = r.toArray(new Field[r.size()]);
         return fields;
@@ -1488,8 +1489,6 @@ public class JAU {
             t = ToStringType.ONE_LINE;
 
         for (Field f: getFieldsForToString(ca)) {
-            if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                f.setAccessible(true);
             if (t == ToStringType.MANY_LINES) {
                 if (!first)
                     sb.append(",\n    ");
