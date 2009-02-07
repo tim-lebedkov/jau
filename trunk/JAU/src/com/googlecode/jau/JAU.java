@@ -731,7 +731,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects annotated by @JAUEquals
+     * Compares 2 objects annotated by JAUEquals
      *
      * @param a first object
      * @param b second object
@@ -818,6 +818,7 @@ public class JAU {
      *     <p>class of <code>a</code> and <code>b</code> is immutable {@link #isImmutableClass(java.lang.Class)} i </p>
      *     <p><code>a</code> or <code>b</code> is null or</p>
      *     <p><code>a</code> and <code>b</code> are arrays with different lenghts</p>
+     *     <p><code>a</code> or <code>b</code> is an annotation</p>
      *     <p>class of <code>a</code> and <code>b</code> is not annotated with JAUCopy</p>
      */
     public static void copy(Object a, Object b) {
@@ -835,6 +836,10 @@ public class JAU {
         if (ca.isEnum())
             throw new IllegalArgumentException(
                     "copy() does not work for enumeration values");
+
+        if (ca.isAnnotation())
+            throw new IllegalArgumentException(
+                    "copy() does not work for annotations");
 
         if (ca.isArray()) {
             int lengtha = Array.getLength(a);
@@ -972,13 +977,34 @@ public class JAU {
      */
     private static void copyAnnotated(Object a, Object b,
             Class ca, JAUCopy classAnnotation, ClassInfo ci) {
-        for (Field f: ci.fields) {
+        for (int i = 0; i < ci.fields.length; i++) {
+            Field f = ci.fields[i];
             try {
-                Object fa = f.get(a);
-                if (f.getType().isPrimitive())
-                    f.set(b, fa);
-                else
-                    f.set(b, clone(fa));
+                switch (ci.types[i]) {
+                    case ClassInfo.INTEGER_TYPE:
+                        f.setInt(b, f.getInt(a));
+                        break;
+                    case ClassInfo.BYTE_TYPE:
+                        f.setByte(b, f.getByte(a));
+                        break;
+                    case ClassInfo.SHORT_TYPE:
+                        f.setShort(b, f.getShort(a));
+                        break;
+                    case ClassInfo.LONG_TYPE:
+                        f.setLong(b, f.getLong(a));
+                        break;
+                    case ClassInfo.FLOAT_TYPE:
+                        f.setFloat(b, f.getFloat(a));
+                        break;
+                    case ClassInfo.DOUBLE_TYPE:
+                        f.setDouble(b, f.getDouble(a));
+                        break;
+                    case ClassInfo.CHARACTER_TYPE:
+                        f.setChar(b, f.getChar(a));
+                        break;
+                    default:
+                        f.set(b, clone(f.get(a)));
+                }
             } catch (IllegalArgumentException ex) {
                 throw (InternalError) new InternalError(
                         ex.getMessage()).initCause(ex);
