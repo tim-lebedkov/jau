@@ -5,7 +5,7 @@ package com.googlecode.jau;
  */
 @JAUEquals
 @JAUHashCode
-public class RealClass {
+class RealClass {
     private int x = 1;
     private int y = 2;
     private int z = 3;

@@ -16,7 +16,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import sun.misc.Unsafe;
 
 /**
  * Annotation based implementation of common methods.
@@ -126,49 +125,17 @@ public class JAU {
         }
     };
 
-    private static final int INTEGER_TYPE = 0;
-    private static final int BYTE_TYPE = 1;
-    private static final int SHORT_TYPE = 2;
-    private static final int LONG_TYPE = 3;
-    private static final int FLOAT_TYPE = 4;
-    private static final int DOUBLE_TYPE = 5;
-    private static final int CHARACTER_TYPE = 6;
-    private static final int OTHER_TYPE = 7;
+    private static JAUInterface IMPLEMENTATION;
 
-    /**
-     * Information about a class.
-     */
-    private static final class ClassInfo {
-        /** is the class annotated (possibly through the package)? */
-        public boolean annotated;
-
-        /** annotation for the class */
-        public Annotation annotation;
-
-        /** fields used for .equals() */
-        public Field[] fields;
-
-        /** offsets for Unsafe */
-        public long[] offsets;
-
-        /** types of fields */
-        public int[] types;
-    }
-
-    /**
-     * Getter for Unsafe
-     */
-    private static Unsafe getUnsafe() {
+    static {
         try {
-            Field field = Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            return (Unsafe)field.get(null);
-        } catch (Exception ex) {
-            return null;
+            IMPLEMENTATION = (JAUInterface) Class.forName(
+                    "com.googlecode.jau.JAUUnsafe").
+                    newInstance();
+        } catch (Exception e) {
+            // ignore
         }
     }
-    
-    private static final Unsafe UNSAFE = getUnsafe();
 
     private static final Map<Class, Copier> COPIERS =
             new ConcurrentHashMap<Class, Copier>();
@@ -486,30 +453,30 @@ public class JAU {
             Field f = fields[i];
             try {
                 switch (ci.types[i]) {
-                    case INTEGER_TYPE:
+                    case ClassInfo.INTEGER_TYPE:
                         result += multiplierNonZeroOddNumber * f.getInt(a);
                         break;
-                    case BYTE_TYPE:
+                    case ClassInfo.BYTE_TYPE:
                         result += multiplierNonZeroOddNumber * f.getByte(a);
                         break;
-                    case SHORT_TYPE:
+                    case ClassInfo.SHORT_TYPE:
                         result += multiplierNonZeroOddNumber * f.getShort(a);
                         break;
-                    case LONG_TYPE:
+                    case ClassInfo.LONG_TYPE:
                         long value = f.getLong(a);
                         result += multiplierNonZeroOddNumber * 
                                 (int)(value ^ (value >>> 32));
                         break;
-                    case FLOAT_TYPE:
+                    case ClassInfo.FLOAT_TYPE:
                         result += multiplierNonZeroOddNumber *
                                 Float.floatToIntBits(f.getFloat(a));
                         break;
-                    case DOUBLE_TYPE:
+                    case ClassInfo.DOUBLE_TYPE:
                         long bits = Double.doubleToLongBits(f.getDouble(a));
                         result += multiplierNonZeroOddNumber *
                                 (int)(bits ^ (bits >>> 32));
                         break;
-                    case CHARACTER_TYPE:
+                    case ClassInfo.CHARACTER_TYPE:
                         result += multiplierNonZeroOddNumber *
                                 (int) (f.getChar(a));
                         break;
@@ -578,24 +545,25 @@ public class JAU {
             ci.offsets = new long[ci.fields.length];
             ci.types = new int[ci.fields.length];
             for (int i = 0; i < ci.fields.length; i++) {
-                ci.offsets[i] = UNSAFE.objectFieldOffset(ci.fields[i]);
+                if (IMPLEMENTATION != null)
+                    IMPLEMENTATION.update(ci);
                 Class fc = ci.fields[i].getType();
                 if (fc == Integer.TYPE) {
-                    ci.types[i] = INTEGER_TYPE;
+                    ci.types[i] = ClassInfo.INTEGER_TYPE;
                 } else if (fc == Byte.TYPE) {
-                    ci.types[i] = BYTE_TYPE;
+                    ci.types[i] = ClassInfo.BYTE_TYPE;
                 } else if (fc == Short.TYPE) {
-                    ci.types[i] = SHORT_TYPE;
+                    ci.types[i] = ClassInfo.SHORT_TYPE;
                 } else if (fc == Long.TYPE) {
-                    ci.types[i] = LONG_TYPE;
+                    ci.types[i] = ClassInfo.LONG_TYPE;
                 } else if (fc == Float.TYPE) {
-                    ci.types[i] = FLOAT_TYPE;
+                    ci.types[i] = ClassInfo.FLOAT_TYPE;
                 } else if (fc == Double.TYPE) {
-                    ci.types[i] = DOUBLE_TYPE;
+                    ci.types[i] = ClassInfo.DOUBLE_TYPE;
                 } else if (fc == Character.TYPE) {
-                    ci.types[i] = CHARACTER_TYPE;
+                    ci.types[i] = ClassInfo.CHARACTER_TYPE;
                 } else {
-                    ci.types[i] = OTHER_TYPE;
+                    ci.types[i] = ClassInfo.OTHER_TYPE;
                 }
             }
             storedInfos.put(c, ci);
@@ -707,8 +675,9 @@ public class JAU {
      * @return true = equals
      */
     private static boolean equalsAnnotated(Object a, Object b,
-            Class ca, ClassInfo ci) throws IllegalArgumentException, IllegalAccessException {
-        if (UNSAFE == null) {
+            Class ca, ClassInfo ci) throws IllegalArgumentException,
+            IllegalAccessException {
+        if (IMPLEMENTATION == null) {
             for (Field f: ci.fields) {
                 Class c = f.getType();
                 if (c == Integer.TYPE) {
@@ -740,51 +709,8 @@ public class JAU {
                 }
             }
         } else {
-            for (int i = 0; i< ci.offsets.length; i++) {
-                long offset = ci.offsets[i];
-                switch (ci.types[i]) {
-                    case INTEGER_TYPE:
-                        if (UNSAFE.getInt(a, offset) != UNSAFE.getInt(b, offset))
-                            return false;
-                        else
-                            break;
-                    case BYTE_TYPE:
-                        if (UNSAFE.getByte(a, offset) != UNSAFE.getByte(b, offset))
-                            return false;
-                        else
-                            break;
-                    case SHORT_TYPE:
-                        if (UNSAFE.getShort(a, offset) != UNSAFE.getShort(b, offset))
-                            return false;
-                        else
-                            break;
-                    case LONG_TYPE:
-                        if (UNSAFE.getLong(a, offset) != UNSAFE.getLong(b, offset))
-                            return false;
-                        else
-                            break;
-                    case FLOAT_TYPE:
-                        if (Float.floatToIntBits(UNSAFE.getFloat(a, offset)) !=
-                                Float.floatToIntBits(UNSAFE.getFloat(b, offset)))
-                            return false;
-                        else
-                            break;
-                    case DOUBLE_TYPE:
-                        if (Double.doubleToLongBits(UNSAFE.getDouble(a, offset)) !=
-                                Double.doubleToLongBits(UNSAFE.getDouble(b, offset)))
-                            return false;
-                        else
-                            break;
-                    case CHARACTER_TYPE:
-                        if (UNSAFE.getChar(a, offset) != UNSAFE.getChar(b, offset))
-                            return false;
-                        else
-                            break;
-                    default:
-                        if (!equals(UNSAFE.getObject(a, offset), UNSAFE.getObject(b, offset)))
-                            return false;
-                }
-            }
+            if (!IMPLEMENTATION.equals(ci, a, b))
+                return false;
         }
         if (ci.annotation == null || ((JAUEquals) ci.annotation).inherited()) {
             Class parentClass = ca.getSuperclass();
