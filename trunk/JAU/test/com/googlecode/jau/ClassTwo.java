@@ -1,6 +1,7 @@
 package com.googlecode.jau;
 
 @JAUToMap
+@JAUToString
 public class ClassTwo {
     public byte byte_;
     public short short_;

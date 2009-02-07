@@ -207,6 +207,8 @@ public class JAU {
         HASH_CODERS.put(StringBuilder.class, new StringBuilderHashCoder());
         HASH_CODERS.put(Hashtable.class, MapHashCoder.INSTANCE);
         HASH_CODERS.put(HashMap.class, MapHashCoder.INSTANCE);
+        STRINGIFIERS.put(Hashtable.class, MapStringifier.INSTANCE);
+        STRINGIFIERS.put(HashMap.class, MapStringifier.INSTANCE);
     }
 
     /**
@@ -235,6 +237,10 @@ public class JAU {
      * An implementation for computing string representation
      * cannot be registered for an
      * array, an enum or a primitive type.
+     *
+     * Stringifiers for the following classes are defined by default:
+     *     java.lang.StringBuffer
+     *     java.lang.StringBuilder
      *
      * @param c a class
      * @param stringifier an implementation for computing string representation
@@ -654,22 +660,21 @@ public class JAU {
             if (lengtha != lengthb)
                 return false;
 
-            Class ct = ca.getComponentType();
-            if (ct == byte[].class)
+            if (ca == byte[].class)
                 return Arrays.equals((byte[]) a, (byte[]) b);
-            else if (ct == short[].class)
+            else if (ca == short[].class)
                 return Arrays.equals((short[]) a, (short[]) b);
-            else if (ct == int[].class)
+            else if (ca == int[].class)
                 return Arrays.equals((int[]) a, (int[]) b);
-            else if (ct == long[].class)
+            else if (ca == long[].class)
                 return Arrays.equals((long[]) a, (long[]) b);
-            else if (ct == char[].class)
+            else if (ca == char[].class)
                 return Arrays.equals((char[]) a, (char[]) b);
-            else if (ct == float[].class)
+            else if (ca == float[].class)
                 return Arrays.equals((float[]) a, (float[]) b);
-            else if (ct == double[].class)
+            else if (ca == double[].class)
                 return Arrays.equals((double[]) a, (double[]) b);
-            else if (ct == boolean[].class)
+            else if (ca == boolean[].class)
                 return Arrays.equals((boolean[]) a, (boolean[]) b);
             else {
                 for (int i = 0; i < lengtha; i++) {
@@ -1167,7 +1172,7 @@ public class JAU {
      */
     public static String toString(Object a) {
         StringBuilder sb = new StringBuilder(50);
-        toString(sb, a);
+        toString(sb, a, false);
         return sb.toString();
     }
 
@@ -1415,8 +1420,9 @@ public class JAU {
      *
      * @param sb string representation will be stored here
      * @param an object or null
+     * @param manyLines true = spread string representatio over many lines
      */
-    private static void toString(StringBuilder sb, Object a) {
+    public static void toString(StringBuilder sb, Object a, boolean manyLines) {
         if (a == null) {
             sb.append("null");
             return;
@@ -1448,7 +1454,7 @@ public class JAU {
                         System.identityHashCode(a))).append("(");
                 try {
                     toStringAnnotated(sb, a, ca,
-                            (JAUToString) ci.annotation);
+                            (JAUToString) ci.annotation, manyLines);
                 } catch (IllegalArgumentException ex) {
                     throw (InternalError) new InternalError(
                             ex.getMessage()).initCause(ex);
@@ -1475,21 +1481,16 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param manyLines spreads the string representation over many lines
      * @return string representation
      */
     private static void toStringAnnotated(StringBuilder sb, Object a,
-            Class ca, JAUToString classAnnotation)
+            Class ca, JAUToString classAnnotation, boolean manyLines)
             throws IllegalArgumentException, IllegalAccessException {
         boolean first = true;
 
-        ToStringType t;
-        if (classAnnotation != null)
-            t = classAnnotation.type();
-        else
-            t = ToStringType.ONE_LINE;
-
         for (Field f: getFieldsForToString(ca)) {
-            if (t == ToStringType.MANY_LINES) {
+            if (manyLines) {
                 if (!first)
                     sb.append(",\n    ");
                 else
@@ -1499,7 +1500,7 @@ public class JAU {
                     sb.append(", ");
             }
             sb.append(f.getName()).append('=');
-                fieldToString(sb, f, a);
+                fieldToString(sb, f, a, manyLines);
                 first = false;
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
@@ -1513,7 +1514,7 @@ public class JAU {
                     if (!first)
                         sb.append(", ");
                     toStringAnnotated(sb, a, parentClass,
-                            (JAUToString) parentci.annotation);
+                            (JAUToString) parentci.annotation, manyLines);
                 }
             }
         }
@@ -1526,8 +1527,10 @@ public class JAU {
      * @param sb output
      * @param f value of this field will be appended
      * @param a value for the field will be read from this object
+     * @param manyLines true = spread string representation over many lines
      */
-    private static void fieldToString(StringBuilder sb, Field f, Object a)
+    private static void fieldToString(StringBuilder sb, Field f, Object a,
+            boolean manyLines)
             throws IllegalArgumentException, IllegalAccessException {
         Class c = f.getType();
         if (c.isPrimitive()) {
@@ -1546,11 +1549,40 @@ public class JAU {
             } else if (c == Character.TYPE) {
                 sb.append(f.getChar(a));
             } else {
-                toString(sb, f.get(a));
+                toString(sb, f.get(a), manyLines);
             }
         } else {
-            toString(sb, f.get(a));
+            toString(sb, f.get(a), manyLines);
         }
+    }
+
+    /**
+     * Transfers field values from one object to another. Classes
+     * should be annotated using JAUToMap (directly or through the
+     * corresponding package) for this to work.
+     *
+     * <code>a</code> and <code>b</code> may be instances of *different*
+     * classes.
+     *
+     * Static and synthetic fields will be ignored.
+     *
+     * @param a source
+     * @param b destination
+     * @param clone if true, each field value will be cloned using JAU.clone
+     * @throws IllegalArgumentException if <code>a</code> or <code>b</code> is an
+     *     enumeration value or an array or the class of <code>a</code> or
+     *     <code>b</code> is not annotated with JAUToMap
+     */
+    public static void transferFields(Object a, Object b, boolean clone) {
+        Map<String, Object> m = toMap(a);
+        if (clone) {
+            Map<String, Object> copy = new HashMap<String, Object>();
+            for (Map.Entry<String, Object> e: m.entrySet()) {
+                copy.put(e.getKey(), clone(e.getValue()));
+            }
+            m = copy;
+        }
+        fromMap(m, b);
     }
 
     /**
@@ -1732,7 +1764,7 @@ public class JAU {
 
     /**
      * Tests whether a class is immutable.
-     *
+     * 
      * Following classes are considered immutable:
      * <ul>
      *  <li>String.class</li>
