@@ -168,4 +168,24 @@ public class ToMapTest {
         Map map = JAU.toMap(new int[] {0});
         System.out.println(JAU.toString(map));
     }
+
+    @Test
+    public void transferFields() {
+        ClassOne a = new ClassOne();
+        ClassTwo b = new ClassTwo();
+
+        JAU.transferFields(a, b, false);
+        Map<String, Object> mapa = JAU.toMap(a);
+        Map<String, Object> mapb = JAU.toMap(b);
+        assertTrue(JAU.toString(mapa) + " <> " +
+                JAU.toString(mapb), JAU.equals(mapa, mapb));
+        assertTrue(a.floata == b.floata);
+
+        JAU.transferFields(a, b, true);
+        mapa = JAU.toMap(a);
+        mapb = JAU.toMap(b);
+        assertTrue(JAU.toString(mapa) + " <> " +
+                JAU.toString(mapb), JAU.equals(mapa, mapb));
+        assertTrue(a.floata != b.floata);
+    }
 }
