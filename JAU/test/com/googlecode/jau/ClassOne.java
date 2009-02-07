@@ -3,6 +3,7 @@ package com.googlecode.jau;
 @JAUEquals
 @JAUToMap
 @JAUToString
+@JAUCopy
 public class ClassOne {
     public byte byte_ = 34;
     public short short_ = 324;

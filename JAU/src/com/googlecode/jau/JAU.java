@@ -222,7 +222,7 @@ public class JAU {
 
     /**
      * Registers a user defined Copier for a class.
-     * A copier cannot be registered for an array, an interface
+     * A copier cannot be registered for an array, an interface, an enum 
      * or a primitive type.
      * 
      * Copiers for the following classes are defined by default:
@@ -236,6 +236,9 @@ public class JAU {
         if (c.isArray())
             throw new IllegalArgumentException(
                     "Cannot register a copier for an array");
+        if (c.isEnum())
+            throw new IllegalArgumentException(
+                    "Cannot register a copier for an enum type");
         if (c.isPrimitive())
             throw new IllegalArgumentException(
                     "Cannot register a copier for a primitive type");
@@ -337,7 +340,7 @@ public class JAU {
 
     /**
      * Registers a user defined hash code algorithm for a class.
-     * A coder cannot be registered for an array, an interface
+     * A coder cannot be registered for an array, an interface, an enum
      * or a primitive type.
      *
      * HashCoders for the following classes are defined by default:
@@ -359,6 +362,9 @@ public class JAU {
         if (c.isInterface())
             throw new IllegalArgumentException(
                     "Cannot register a coder for an interface");
+        if (c.isEnum())
+            throw new IllegalArgumentException(
+                    "Cannot register a coder for an enum type");
         HASH_CODERS.put(c, hc);
     }
 
@@ -848,7 +854,16 @@ public class JAU {
                 throw new IllegalArgumentException(
                         "Cannot copy arrays with different lengths");
 
-            System.arraycopy(a, 0, b, 0, lengtha);
+            Class ct = ca.getComponentType();
+            if (ct.isPrimitive())
+                System.arraycopy(a, 0, b, 0, lengtha);
+            else {
+                Object[] a_ = (Object[]) a;
+                Object[] b_ = (Object[]) b;
+                for (int i = 0; i < lengtha; i++) {
+                    b_[i] = clone(a_[i]);
+                }
+            }
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_COPY, ca, JAUCopy.class, 
                     JAU_COPY_INCLUDE, JAU_COPY_ALLFIELDS);
@@ -1080,13 +1095,85 @@ public class JAU {
             int lengtha = Array.getLength(a);
             int lengthb = Array.getLength(b);
 
-            for (int i = 0; i < Math.min(lengtha, lengthb); i++) {
-                Object ela = Array.get(a, i);
-                Object elb = Array.get(b, i);
-                int r = compare(ela, elb);
-                if (r != 0)
-                    return r;
+            int ub = Math.min(lengtha, lengthb);
+            if (ca == byte[].class) {
+                byte[] arra = (byte[]) a;
+                byte[] arrb = (byte[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i])
+                        return arra[i] - arrb[i];
+                }
+            } else if (ca == short[].class) {
+                short[] arra = (short[]) a;
+                short[] arrb = (short[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i])
+                        return arra[i] - arrb[i];
+                }
+            } else if (ca == int[].class) {
+                int[] arra = (int[]) a;
+                int[] arrb = (int[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i])
+                        return arra[i] - arrb[i];
+                }
+            } else if (ca == long[].class) {
+                long[] arra = (long[]) a;
+                long[] arrb = (long[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i])
+                        return (int) (arra[i] - arrb[i]);
+                }
+            } else if (ca == char[].class) {
+                char[] arra = (char[]) a;
+                char[] arrb = (char[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i])
+                        return arra[i] - arrb[i];
+                }
+            } else if (ca == float[].class) {
+                float[] arra = (float[]) a;
+                float[] arrb = (float[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i]) {
+                        if (arra[i] < arrb[i])
+                            return -1;
+                        else
+                            return 1;
+                    }
+                }
+            } else if (ca == double[].class) {
+                double[] arra = (double[]) a;
+                double[] arrb = (double[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i]) {
+                        if (arra[i] < arrb[i])
+                            return -1;
+                        else
+                            return 1;
+                    }
+                }
+            } else if (ca == boolean[].class) {
+                boolean[] arra = (boolean[]) a;
+                boolean[] arrb = (boolean[]) b;
+                for (int i = 0; i < ub; i++) {
+                    if (arra[i] != arrb[i]) {
+                        if (arra[i])
+                            return 1;
+                        else
+                            return -1;
+                    }
+                }
+            } else {
+                for (int i = 0; i < ub; i++) {
+                    Object ela = Array.get(a, i);
+                    Object elb = Array.get(b, i);
+                    int r = compare(ela, elb);
+                    if (r != 0)
+                        return r;
+                }
             }
+
             return lengtha - lengthb;
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_COMPARE, ca,
