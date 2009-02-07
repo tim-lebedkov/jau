@@ -59,4 +59,29 @@ public class CopyTest {
     public void class_() {
         JAU.copy(String.class, Integer.class);
     }
+
+    @Test
+    public void copyObjectArrayField() {
+        ClassOne a = new ClassOne();
+        ClassOne b = new ClassOne();
+        b.clear();
+
+        assertEquals((Object) null, b.stringa2);
+
+        JAU.copy(a, b);
+        assertTrue(JAU.equals(a, b));
+        assertTrue(a.stringa2 != b.stringa2);
+    }
+
+    @Test
+    public void copyObjectArray() {
+        AllFields[] a = new AllFields[] {new AllFields()};
+        AllFields[] b = new AllFields[1];
+
+        JAU.copy(a, b);
+        assertTrue(a[0] != b[0]);
+        assertTrue(b[0] != null);
+
+        assertTrue(JAU.equals(a, b));
+    }
 }
