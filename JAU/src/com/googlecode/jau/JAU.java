@@ -73,6 +73,48 @@ public class JAU {
         }
     };
 
+    private static final BooleanFunc<JAUEquals> JAU_EQUALS_ALLFIELDS =
+            new BooleanFunc<JAUEquals>() {
+        public boolean perform(JAUEquals a) {
+            return a.allFields();
+        }
+    };
+
+    private static final BooleanFunc<JAUToString> JAU_TOSTRING_ALLFIELDS =
+            new BooleanFunc<JAUToString>() {
+        public boolean perform(JAUToString a) {
+            return a.allFields();
+        }
+    };
+
+    private static final BooleanFunc<JAUHashCode> JAU_HASHCODE_ALLFIELDS =
+            new BooleanFunc<JAUHashCode>() {
+        public boolean perform(JAUHashCode a) {
+            return a.allFields();
+        }
+    };
+
+    private static final BooleanFunc<JAUCopy> JAU_COPY_ALLFIELDS =
+            new BooleanFunc<JAUCopy>() {
+        public boolean perform(JAUCopy a) {
+            return a.allFields();
+        }
+    };
+
+    private static final BooleanFunc<JAUCompareTo> JAU_COMPARETO_ALLFIELDS =
+            new BooleanFunc<JAUCompareTo>() {
+        public boolean perform(JAUCompareTo a) {
+            return a.allFields();
+        }
+    };
+
+    private static final BooleanFunc<JAUToMap> JAU_TOMAP_ALLFIELDS =
+            new BooleanFunc<JAUToMap>() {
+        public boolean perform(JAUToMap a) {
+            return a.allFields();
+        }
+    };
+
     /**
      * -
      */
@@ -180,7 +222,8 @@ public class JAU {
 
     /**
      * Registers a user defined Copier for a class.
-     * A copier cannot be registered for an array or a primitive type.
+     * A copier cannot be registered for an array, an interface
+     * or a primitive type.
      * 
      * Copiers for the following classes are defined by default:
      *     java.lang.StringBuffer
@@ -196,14 +239,17 @@ public class JAU {
         if (c.isPrimitive())
             throw new IllegalArgumentException(
                     "Cannot register a copier for a primitive type");
+        if (c.isInterface())
+            throw new IllegalArgumentException(
+                    "Cannot register a copier for an interface");
         COPIERS.put(c, copier);
     }
 
     /**
      * Registers a user defined Stringifier for a class.
      * An implementation for computing string representation
-     * cannot be registered for an
-     * array, an enum or a primitive type.
+     * cannot be registered for an array, an enum, interface
+     * or a primitive type.
      *
      * Stringifiers for the following classes are defined by default:
      *     java.lang.StringBuffer
@@ -222,13 +268,16 @@ public class JAU {
         if (c.isEnum())
             throw new IllegalArgumentException(
                     "Cannot register a stringifier for an enum type");
+        if (c.isInterface())
+            throw new IllegalArgumentException(
+                    "Cannot register a Stringifier for an interface");
         STRINGIFIERS.put(c, stringifier);
     }
 
     /**
      * Registers a user defined Comparator for a class
-     * A comparator cannot be registered for an array, a primitive type or
-     * a type that implements {@link Comparable}
+     * A comparator cannot be registered for an array, a primitive type, an
+     * interface or a type that implements {@link Comparable}
      *
      * Comparators for the following classes are defined by default:
      *     java.lang.StringBuffer
@@ -244,6 +293,9 @@ public class JAU {
         if (c.isPrimitive())
             throw new IllegalArgumentException(
                     "Cannot register a comparator for a primitive type");
+        if (c.isInterface())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for an interface");
         if (Comparable.class.isAssignableFrom(c))
             throw new IllegalArgumentException(
                 "Cannot register a comparator for a class that implements " +
@@ -254,8 +306,8 @@ public class JAU {
     /**
      * Registers a user defined Comparator for a class that is used in
      * JAU.equals.
-     * A comparator cannot be registered for an array, a primitive type or
-     * a type that implements {@link Comparable}
+     * A comparator cannot be registered for an array, a primitive type,
+     * an interface or a type that implements {@link Comparable}
      *
      * Comparators for the following classes are defined by default:
      *     java.lang.StringBuffer
@@ -273,6 +325,9 @@ public class JAU {
         if (c.isPrimitive())
             throw new IllegalArgumentException(
                     "Cannot register a comparator for a primitive type");
+        if (c.isInterface())
+            throw new IllegalArgumentException(
+                    "Cannot register a comparator for an interface");
         if (Comparable.class.isAssignableFrom(c))
             throw new IllegalArgumentException(
                 "Cannot register a comparator for a class that implements " +
@@ -282,7 +337,8 @@ public class JAU {
 
     /**
      * Registers a user defined hash code algorithm for a class.
-     * A coder cannot be registered for an array or a primitive type.
+     * A coder cannot be registered for an array, an interface
+     * or a primitive type.
      *
      * HashCoders for the following classes are defined by default:
      *     java.lang.StringBuffer
@@ -300,6 +356,9 @@ public class JAU {
         if (c.isPrimitive())
             throw new IllegalArgumentException(
                     "Cannot register a coder for a primitive type");
+        if (c.isInterface())
+            throw new IllegalArgumentException(
+                    "Cannot register a coder for an interface");
         HASH_CODERS.put(c, hc);
     }
 
@@ -415,7 +474,8 @@ public class JAU {
             }
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_HASHCODE, ca,
-                    JAUHashCode.class, JAU_HASHCODE_INCLUDE);
+                    JAUHashCode.class, JAU_HASHCODE_INCLUDE,
+                    JAU_HASHCODE_ALLFIELDS);
             if (ci.annotated) {
                 return hashCodeAnnotated(a, ci, ca,
                         (JAUHashCode) ci.annotation,
@@ -447,7 +507,8 @@ public class JAU {
     private static int hashCodeAnnotated(Object a, ClassInfo ci,
             Class ca, JAUHashCode classAnnotation, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
-        Field[] fields = getFieldsForHashCode(ca);
+        Field[] fields = getFieldsFor(ca, JAUHashCode.class,
+                JAU_HASHCODE_INCLUDE, JAU_HASHCODE_ALLFIELDS);
         int result = initialNonZeroOddNumber;
         for (int i = 0; i < fields.length; i++) {
             Field f = fields[i];
@@ -498,7 +559,8 @@ public class JAU {
                 return result;
 
             ClassInfo parentci = annotatedFor(ANNOTATED_FOR_HASHCODE,
-                    parentClass, JAUHashCode.class, JAU_HASHCODE_INCLUDE);
+                    parentClass, JAUHashCode.class, JAU_HASHCODE_INCLUDE,
+                    JAU_HASHCODE_ALLFIELDS);
             if (parentci.annotated)
                 return result + hashCodeAnnotated(a, parentci, parentClass,
                         (JAUHashCode) parentci.annotation,
@@ -516,20 +578,22 @@ public class JAU {
      *
      * @param c a class
      * @param annotationClass class of the annotation
+     * @param includeFunc calls .include() on the annotation
+     * @param allFields calls .allFields() on the annotation
      * @return information about annotation
      */
     private static ClassInfo annotatedFor(
             Map<Class, ClassInfo> storedInfos,
             Class c, Class annotationClass,
-            BooleanFunc includeFunc) {
+            BooleanFunc includeFunc, BooleanFunc allFieldsFunc) {
         ClassInfo b = storedInfos.get(c);
         if (b == null) {
             // firstly, check package annotation
             Package p = c.getPackage();
             boolean include = false;
             if (p != null) {
-                JAUEquals annotation = p.getAnnotation(JAUEquals.class);
-                if (annotation != null && annotation.include())
+                Annotation annotation = p.getAnnotation(annotationClass);
+                if (annotation != null && includeFunc.perform(annotation))
                     include = true;
             }
 
@@ -541,7 +605,8 @@ public class JAU {
             ClassInfo ci = new ClassInfo();
             ci.annotated = include;
             ci.annotation = annotation;
-            ci.fields = getFieldsForEquals(c);
+            ci.fields = getFieldsFor(c, annotationClass, includeFunc,
+                    allFieldsFunc);
             ci.offsets = new long[ci.fields.length];
             ci.types = new int[ci.fields.length];
             for (int i = 0; i < ci.fields.length; i++) {
@@ -611,7 +676,8 @@ public class JAU {
 
         ClassInfo ci = annotatedFor(
                 ANNOTATED_FOR_EQUALS,
-                ca, JAUEquals.class, JAU_EQUALS_INCLUDE);
+                ca, JAUEquals.class, JAU_EQUALS_INCLUDE,
+                JAU_EQUALS_ALLFIELDS);
         if (ci.annotated) {
             try {
                 return equalsAnnotated(a, b, ca, ci);
@@ -720,7 +786,7 @@ public class JAU {
             ClassInfo cip = annotatedFor(
                     ANNOTATED_FOR_EQUALS,
                     parentClass,
-                    JAUEquals.class, JAU_EQUALS_INCLUDE);
+                    JAUEquals.class, JAU_EQUALS_INCLUDE, JAU_EQUALS_ALLFIELDS);
             if (cip.annotated)
                 return equalsAnnotated(a, b, parentClass, cip);
             else
@@ -728,39 +794,6 @@ public class JAU {
         }
 
         return true;
-    }
-
-    /**
-     * Optimized version for comparing field values.
-     *
-     * @param f value of this field will be compared
-     * @param a first object
-     * @param b second object
-     */
-    private static int fieldCompare(Field f, Object a, Object b)
-            throws IllegalArgumentException, IllegalAccessException {
-        Class c = f.getType();
-        if (c.isPrimitive()) {
-            if (c == Byte.TYPE) {
-                return f.getByte(a) - f.getByte(b);
-            } else if (c == Short.TYPE) {
-                return f.getShort(a) - f.getShort(b);
-            } else if (c == Integer.TYPE) {
-                return f.getInt(a) - f.getInt(b);
-            } else if (c == Long.TYPE) {
-                return (int) (f.getLong(a) - f.getLong(b));
-            } else if (c == Float.TYPE) {
-                return Float.compare(f.getFloat(a), f.getFloat(b));
-            } else if (c == Double.TYPE) {
-                return Double.compare(f.getDouble(a), f.getDouble(b));
-            } else if (c == Character.TYPE) {
-                return f.getChar(a) - f.getChar(b);
-            } else {
-                return compare(f.get(a), f.get(b));
-            }
-        } else {
-            return compare(f.get(a), f.get(b));
-        }
     }
 
     /**
@@ -810,19 +843,12 @@ public class JAU {
                 throw new IllegalArgumentException(
                         "Cannot copy arrays with different lengths");
 
-            for (int i = 0; i < lengtha; i++) {
-                Object ela = Array.get(a, i);
-                if (ca.getComponentType().isPrimitive())
-                    Array.set(b, i, ela);
-                else
-                    Array.set(b, i, clone(ela));
-            }
-            return;
+            System.arraycopy(a, 0, b, 0, lengtha);
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_COPY, ca, JAUCopy.class, 
-                    JAU_COPY_INCLUDE);
+                    JAU_COPY_INCLUDE, JAU_COPY_ALLFIELDS);
             if (ci.annotated) {
-                copyAnnotated(a, b, ca, (JAUCopy) ci.annotation);
+                copyAnnotated(a, b, ca, (JAUCopy) ci.annotation, ci);
             } else {
                 Copier copier = COPIERS.get(ca);
                 if (copier != null)
@@ -836,18 +862,33 @@ public class JAU {
 
     /**
      * Firstly, this method creates an object: either by
-     * - invoking clone if the class of a implements Cloneable
-     * - invoking the default constructor (even if it is private)
-     * - invoking the copy constructor if it exists (in this case there will
-     *     be no special field copying)
+     * <ul>
+     *  <li>- invoking clone if the class of a implements Cloneable</li>
+     *  <li>- invoking the default constructor (even if it is private)</li>
+     *  <li>- invoking the copy constructor if it exists (in this case there will
+     *     be no special field copying)</li>
+     * </ul>
      *
      * Copies of the following classes are not created
-     * for enumerations or immutable classes
-     * {@link #isImmutableClass(java.lang.Class)}
+     * for enumerations or immutable classes:
+     * <ul>
+     *  <li>String.class</li>
+     *  <li>Byte.class</li>
+     *  <li>Short.class</li>
+     *  <li>Integer.class</li>
+     *  <li>Long.class</li>
+     *  <li>Float.class</li>
+     *  <li>Double.class</li>
+     *  <li>Character.class</li>
+     *  <li>Class.class</li>
+     *  <li>Object.class</li>
+     *  <li>BigDecimal.class</li>
+     *  <li>BigInteger.class</li>
+     *  <li>any enumeration class</li>
+     * </ul>
      * 
      * @param a an object or null
-     * @return null, if a == null
-     *    copy of a otherwise
+     * @return null, if a == null, copy of a otherwise
      */
     public static Object clone(Object a) {
         if (a == null)
@@ -926,12 +967,12 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param ci info about the class
      * @return true = equals
      */
     private static void copyAnnotated(Object a, Object b,
-            Class ca, JAUCopy classAnnotation) {
-        Field[] fields = getFieldsForCopy(ca);
-        for (Field f: fields) {
+            Class ca, JAUCopy classAnnotation, ClassInfo ci) {
+        for (Field f: ci.fields) {
             try {
                 Object fa = f.get(a);
                 if (f.getType().isPrimitive())
@@ -952,10 +993,12 @@ public class JAU {
                 return;
 
             ClassInfo parentci = annotatedFor(ANNOTATED_FOR_COPY,
-                    parentClass, JAUCopy.class, JAU_COPY_INCLUDE);
+                    parentClass, JAUCopy.class, JAU_COPY_INCLUDE,
+                    JAU_COMPARETO_ALLFIELDS);
             if (parentci.annotated)
                 copyAnnotated(a, b, parentClass,
-                        (JAUCopy) parentClass.getAnnotation(JAUCopy.class));
+                        (JAUCopy) parentClass.getAnnotation(JAUCopy.class),
+                        parentci);
         }
     }
 
@@ -1021,7 +1064,8 @@ public class JAU {
             return lengtha - lengthb;
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_COMPARE, ca,
-                    JAUCompareTo.class, JAU_COMPARETO_INCLUDE);
+                    JAUCompareTo.class, JAU_COMPARETO_INCLUDE,
+                    JAU_COMPARETO_ALLFIELDS);
             if (ci.annotated) {
                 return compareAnnotated(a, b, ca,
                         (JAUCompareTo) ci.annotation);
@@ -1057,7 +1101,8 @@ public class JAU {
                 // nothing
             } else {
                 ClassInfo parentci = annotatedFor(ANNOTATED_FOR_COMPARE,
-                        parentClass, JAUCompareTo.class, JAU_COMPARETO_INCLUDE);
+                        parentClass, JAUCompareTo.class, JAU_COMPARETO_INCLUDE,
+                        JAU_COMPARETO_ALLFIELDS);
                 if (parentci.annotated)
                     inheritedCompare = compareAnnotated(a, b, parentClass,
                             (JAUCompareTo) parentci.annotation);
@@ -1066,10 +1111,29 @@ public class JAU {
         if (inheritedCompare != 0)
             return inheritedCompare;
 
-        Field[] fields = getFieldsForCompareTo(ca);
+        Field[] fields = getFieldsFor(ca, JAUCompareTo.class,
+                JAU_COMPARETO_INCLUDE, JAU_COMPARETO_ALLFIELDS);
         for (Field f: fields) {
             try {
-                int r = fieldCompare(f, a, b);
+                Class c = f.getType();
+                int r;
+                if (c == Byte.TYPE) {
+                    r = f.getByte(a) - f.getByte(b);
+                } else if (c == Short.TYPE) {
+                    r = f.getShort(a) - f.getShort(b);
+                } else if (c == Integer.TYPE) {
+                    r = f.getInt(a) - f.getInt(b);
+                } else if (c == Long.TYPE) {
+                    r = (int) (f.getLong(a) - f.getLong(b));
+                } else if (c == Float.TYPE) {
+                    r = Float.compare(f.getFloat(a), f.getFloat(b));
+                } else if (c == Double.TYPE) {
+                    r = Double.compare(f.getDouble(a), f.getDouble(b));
+                } else if (c == Character.TYPE) {
+                    r = f.getChar(a) - f.getChar(b);
+                } else {
+                    r = compare(f.get(a), f.get(b));
+                }
                 if (r != 0)
                     return r;
             } catch (IllegalArgumentException ex) {
@@ -1107,16 +1171,18 @@ public class JAU {
      * specified class.
      *
      * @param c a class annotated with JAUEquals
+     * @param annotationClass annotation class like JAUEquals
      * @return fields
      */
-    private static Field[] getFieldsForEquals(Class c) {
+    private static Field[] getFieldsFor(Class c, Class annotationClass,
+            BooleanFunc includef, BooleanFunc allFields) {
         Field[] fields = c.getDeclaredFields();
-        JAUEquals classAnnotation =
-                (JAUEquals) c.getAnnotation(JAUEquals.class);
+        Annotation classAnnotation =
+                c.getAnnotation(annotationClass);
 
         boolean defaultInclude;
         if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
+            defaultInclude = allFields.perform(classAnnotation);
         else
             defaultInclude = true;
 
@@ -1126,209 +1192,14 @@ public class JAU {
                 continue;
 
             boolean include = defaultInclude;
-            JAUEquals an = (JAUEquals) f.getAnnotation(JAUEquals.class);
+            Annotation an = f.getAnnotation(annotationClass);
             if (an != null)
-                include &= an.include();
+                include &= includef.perform(an);
 
             if (include) {
                 r.add(f);
                 if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
                     f.setAccessible(true);
-            }
-        }
-        fields = r.toArray(new Field[r.size()]);
-        return fields;
-    }
-
-    /**
-     * Returns all fields necessary to perform equals() computation for the
-     * specified class.
-     *
-     * @param c a class annotated with JAUEquals
-     * @return fields
-     */
-    private static Field[] getFieldsForToMap(Class c) {
-        Field[] fields = c.getDeclaredFields();
-
-        JAUToMap classAnnotation =
-                (JAUToMap) c.getAnnotation(JAUToMap.class);
-
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-
-        List<Field> r = new ArrayList<Field>();
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                r.add(f);
-            }
-        }
-        fields = r.toArray(new Field[r.size()]);
-        return fields;
-    }
-
-    /**
-     * Returns all fields necessary to perform compare() computation for the
-     * specified class.
-     *
-     * @param c a class annotated with JAUCompareTo
-     * @return fields
-     */
-    private static Field[] getFieldsForCompareTo(Class c) {
-        Field[] fields = c.getDeclaredFields();
-
-        JAUCompareTo classAnnotation =
-                (JAUCompareTo) c.getAnnotation(JAUCompareTo.class);
-
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-
-        List<Field> r = new ArrayList<Field>();
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUCompareTo an = (JAUCompareTo) f.getAnnotation(JAUCompareTo.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                r.add(f);
-            }
-        }
-        fields = r.toArray(new Field[r.size()]);
-        return fields;
-    }
-
-    /**
-     * Returns all fields necessary to perform copy() computation for the
-     * specified class.
-     *
-     * @param c a class annotated with JAUCopy
-     * @return fields
-     */
-    private static Field[] getFieldsForCopy(Class c) {
-        Field[] fields = c.getDeclaredFields();
-
-        JAUCopy classAnnotation =
-                (JAUCopy) c.getAnnotation(JAUCopy.class);
-
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-
-        List<Field> r = new ArrayList<Field>();
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUCopy an = (JAUCopy) f.getAnnotation(JAUCopy.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                r.add(f);
-            }
-        }
-        fields = r.toArray(new Field[r.size()]);
-        return fields;
-    }
-
-    /**
-     * Returns all fields necessary to perform hashCode() computation for the
-     * specified class.
-     *
-     * @param c a class annotated with JAUHashCode
-     * @return fields
-     */
-    private static Field[] getFieldsForHashCode(Class c) {
-        Field[] fields = c.getDeclaredFields();
-
-        JAUHashCode classAnnotation =
-                (JAUHashCode) c.getAnnotation(JAUHashCode.class);
-
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-
-        List<Field> r = new ArrayList<Field>();
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUHashCode an = (JAUHashCode) f.getAnnotation(JAUHashCode.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                r.add(f);
-            }
-        }
-        fields = r.toArray(new Field[r.size()]);
-        return fields;
-    }
-
-    /**
-     * Returns all fields necessary to perform toString() computation for the
-     * specified class.
-     *
-     * @param c a class annotated with JAUToString
-     * @return fields
-     */
-    private static Field[] getFieldsForToString(Class c) {
-        Field[] fields = c.getDeclaredFields();
-
-        JAUToString classAnnotation =
-                (JAUToString) c.getAnnotation(JAUToString.class);
-
-        boolean defaultInclude;
-        if (classAnnotation != null)
-            defaultInclude = classAnnotation.allFields();
-        else
-            defaultInclude = true;
-
-        List<Field> r = new ArrayList<Field>();
-        for (Field f: fields) {
-            if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic())
-                continue;
-
-            boolean include = defaultInclude;
-            JAUToString an = (JAUToString) f.getAnnotation(JAUToString.class);
-            if (an != null)
-                include &= an.include();
-
-            if (include) {
-                if (Modifier.isPrivate(f.getModifiers()) && !f.isAccessible())
-                    f.setAccessible(true);
-                r.add(f);
             }
         }
         fields = r.toArray(new Field[r.size()]);
@@ -1373,7 +1244,8 @@ public class JAU {
             sb.append('\"').append(a).append('\"');
         } else {
             ClassInfo ci = annotatedFor(ANNOTATED_FOR_TO_STRING,
-                    ca, JAUToString.class, JAU_TOSTRING_INCLUDE);
+                    ca, JAUToString.class, JAU_TOSTRING_INCLUDE,
+                    JAU_TOSTRING_ALLFIELDS);
             if (ci.annotated) {
                 sb.append(ca.getCanonicalName()).append("@").
                         append(Integer.toHexString(
@@ -1415,7 +1287,8 @@ public class JAU {
             throws IllegalArgumentException, IllegalAccessException {
         boolean first = true;
 
-        for (Field f: getFieldsForToString(ca)) {
+        for (Field f: getFieldsFor(ca, JAUToString.class, JAU_TOSTRING_INCLUDE,
+                JAU_TOSTRING_ALLFIELDS)) {
             if (manyLines) {
                 if (!first)
                     sb.append(",\n    ");
@@ -1435,7 +1308,8 @@ public class JAU {
                 // nothing
             } else {
                 ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TO_STRING,
-                        parentClass, JAUToString.class, JAU_TOSTRING_INCLUDE);
+                        parentClass, JAUToString.class, JAU_TOSTRING_INCLUDE,
+                        JAU_TOSTRING_ALLFIELDS);
                 if (parentci.annotated) {
                     if (!first)
                         sb.append(", ");
@@ -1538,7 +1412,7 @@ public class JAU {
                     "toMap() does not work for arrays and enumeration values");
 
         ClassInfo ci = annotatedFor(ANNOTATED_FOR_TOMAP, ca, JAUToMap.class,
-                JAU_TOMAP_INCLUDE);
+                JAU_TOMAP_INCLUDE, JAU_TOMAP_ALLFIELDS);
         if (ci.annotated) {
             Map<String, Object> m = new HashMap<String, Object>();
             toMapAnnotated(m, a, ca, (JAUToMap) ci.annotation);
@@ -1562,7 +1436,8 @@ public class JAU {
     private static void toMapAnnotated(Map<String, Object> map,
             Object a,
             Class ca, JAUToMap classAnnotation) {
-        Field[] fields = getFieldsForToMap(ca);
+        Field[] fields = getFieldsFor(ca, JAUToMap.class, JAU_TOMAP_INCLUDE,
+                JAU_TOMAP_ALLFIELDS);
         for (Field f: fields) {
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
             if (Modifier.isPrivate(f.getModifiers()))
@@ -1593,7 +1468,8 @@ public class JAU {
                 // nothing
             } else {
                 ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TOMAP,
-                        parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE);
+                        parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE,
+                        JAU_TOMAP_ALLFIELDS);
                 if (parentci.annotated) {
                     toMapAnnotated(map, a, parentClass,
                             (JAUToMap) parentci.annotation);
@@ -1626,7 +1502,7 @@ public class JAU {
             return;
 
         ClassInfo ci = annotatedFor(ANNOTATED_FOR_TOMAP, ca, JAUToMap.class,
-                JAU_TOMAP_INCLUDE);
+                JAU_TOMAP_INCLUDE, JAU_TOMAP_ALLFIELDS);
         if (ci.annotated) {
             fromMapAnnotated(map, a, ca, (JAUToMap) ci.annotation);
         }
@@ -1647,7 +1523,8 @@ public class JAU {
     private static void fromMapAnnotated(Map<String, Object> map,
             Object a,
             Class ca, JAUToMap classAnnotation) {
-        Field[] fields = getFieldsForToMap(ca);
+        Field[] fields = getFieldsFor(ca, JAUToMap.class, JAU_TOMAP_INCLUDE,
+                JAU_TOMAP_ALLFIELDS);
         for (Field f: fields) {
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
 
@@ -1679,7 +1556,8 @@ public class JAU {
                 // nothing
             } else {
                 ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TOMAP,
-                        parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE);
+                        parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE,
+                        JAU_TOMAP_ALLFIELDS);
                 if (parentci.annotated) {
                     fromMapAnnotated(map, a, parentClass,
                             (JAUToMap) parentci.annotation);
