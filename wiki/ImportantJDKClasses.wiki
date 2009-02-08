@@ -11,13 +11,13 @@ most important packages:
   * java.util 
   * java.math 
   * java.net 
-  * java.lang.ref 
-  * java.lang.reflect 
   * java.awt.color 
   * java.text 
-  * javax.annotation 
 
 less important packages:
+  * java.lang.ref 
+  * java.lang.reflect 
+  * javax.annotation 
   * java.applet 
   * java.awt 
   * java.awt.datatransfer 
