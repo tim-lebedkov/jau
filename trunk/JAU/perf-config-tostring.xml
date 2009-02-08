@@ -6,7 +6,7 @@
     
     <param name="japex.resultUnit" value="ms"/>
     <param name="japex.warmupIterations" value="20"/>
-    <param name="japex.runIterations" value="1000"/>
+    <param name="japex.runIterations" value="10000"/>
 
     <driver name="toStringJAU">
         <param name="japex.driverClass" value="com.googlecode.jau.GGJAUPerfTest_"/>

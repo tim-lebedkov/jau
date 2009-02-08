@@ -3,6 +3,7 @@ package com.googlecode.jau;
 /**
  * A class with only one string field.
  */
+@JAUEquals
 public class BigString {
     public String value;
 

@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -208,14 +209,20 @@ public class JAU {
         COPIERS.put(StringBuilder.class, new StringBuilderCopier());
         COMPARATORS_COMPARETO.put(StringBuffer.class, new StringBufferComparator());
         COMPARATORS_COMPARETO.put(StringBuilder.class, new StringBuilderComparator());
+        COMPARATORS_COMPARETO.put(Vector.class, (Comparator) ListHelper.INSTANCE);
+        COMPARATORS_COMPARETO.put(ArrayList.class, (Comparator) ListHelper.INSTANCE);
         COMPARATORS_EQUALS.put(StringBuffer.class, new StringBufferComparator());
         COMPARATORS_EQUALS.put(StringBuilder.class, new StringBuilderComparator());
         COMPARATORS_EQUALS.put(Hashtable.class, MapComparator.INSTANCE);
         COMPARATORS_EQUALS.put(HashMap.class, MapComparator.INSTANCE);
+        COMPARATORS_EQUALS.put(Vector.class, (Comparator) ListHelper.INSTANCE);
+        COMPARATORS_EQUALS.put(ArrayList.class, (Comparator) ListHelper.INSTANCE);
         HASH_CODERS.put(StringBuffer.class, new StringBufferHashCoder());
         HASH_CODERS.put(StringBuilder.class, new StringBuilderHashCoder());
         HASH_CODERS.put(Hashtable.class, MapHashCoder.INSTANCE);
         HASH_CODERS.put(HashMap.class, MapHashCoder.INSTANCE);
+        HASH_CODERS.put(Vector.class, ListHelper.INSTANCE);
+        HASH_CODERS.put(ArrayList.class, ListHelper.INSTANCE);
         STRINGIFIERS.put(Hashtable.class, MapStringifier.INSTANCE);
         STRINGIFIERS.put(HashMap.class, MapStringifier.INSTANCE);
     }
@@ -285,6 +292,8 @@ public class JAU {
      * Comparators for the following classes are defined by default:
      *     java.lang.StringBuffer
      *     java.lang.StringBuilder
+     *     java.lang.Vector
+     *     java.lang.ArrayList
      * 
      * @param c a class
      * @param copier a copier for the class
@@ -317,6 +326,8 @@ public class JAU {
      *     java.lang.StringBuilder
      *     java.util.Hashtable
      *     java.util.HashMap
+     *     java.util.Vector
+     *     java.util.ArrayList
      *
      * @param c a class
      * @param copier a copier for the class
@@ -348,6 +359,8 @@ public class JAU {
      *     java.lang.StringBuilder
      *     java.util.Hashtable
      *     java.util.HashMap
+     *     java.util.Vector
+     *     java.util.ArrayList
      * 
      * @param c a class
      * @param hc a hash code algorithm for the class
@@ -378,12 +391,6 @@ public class JAU {
      *
      * Static and synthetic fields will be ignored.
      *
-     * Default HashCoders are registered for the following classes:
-     * <ul>
-     *  <li>{@link java.lang.StringBuffer}</li>
-     *  <li>{@link java.lang.StringBuilder}</li>
-     * </ul>
-     *
      * @param a object or null
      * @return generated hash code. If same fields in a class are marked
      *     with {@link JAUEquals} and {@link JAUHashCode},
@@ -404,12 +411,6 @@ public class JAU {
      * {@link #registerHashCoder(java.lang.Class, com.googlecode.jau.HashCoder)}.
      *
      * Static and synthetic fields will be ignored.
-     *
-     * Default HashCoders are registered for the following classes:
-     * <ul>
-     *  <li>{@link java.lang.StringBuffer}</li>
-     *  <li>{@link java.lang.StringBuilder}</li>
-     * </ul>
      *
      * @param a an object or null
      * @param initialNonZeroOddNumber
@@ -812,12 +813,6 @@ public class JAU {
      * {@link #registerCopier(java.lang.Class, com.googlecode.jau.Copier)}
      *
      * Static and synthetic fields will be ignored.
-     *
-     * Default Copiers are registered for the following classes:
-     * <ul>
-     *  <li>java.lang.StringBuffer</li>
-     *  <li>java.lang.StringBuilder</li>
-     * </ul>
      *
      * @param a first object
      * @param b second object
