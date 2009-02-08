@@ -225,6 +225,8 @@ public class JAU {
         HASH_CODERS.put(ArrayList.class, ListHelper.INSTANCE);
         STRINGIFIERS.put(Hashtable.class, MapStringifier.INSTANCE);
         STRINGIFIERS.put(HashMap.class, MapStringifier.INSTANCE);
+        STRINGIFIERS.put(Vector.class, (Stringifier) ListHelper.INSTANCE);
+        STRINGIFIERS.put(ArrayList.class, (Stringifier) ListHelper.INSTANCE);
     }
 
     /**
@@ -262,8 +264,10 @@ public class JAU {
      * or a primitive type.
      *
      * Stringifiers for the following classes are defined by default:
-     *     java.lang.StringBuffer
-     *     java.lang.StringBuilder
+     *     java.util.HashMap
+     *     java.util.Hashtable
+     *     java.util.Vector
+     *     java.util.ArrayList
      *
      * @param c a class
      * @param stringifier an implementation for computing string representation
