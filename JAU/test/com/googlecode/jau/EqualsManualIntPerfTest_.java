@@ -43,7 +43,13 @@ public class EqualsManualIntPerfTest_ extends JapexDriverBase {
 
     private static boolean result;
 
-    public void run(TestCase testCase) {
+    @Override
+    public void warmup(TestCase testCase) {
         result = first.equals(second);
+    }
+
+    public void run(TestCase testCase) {
+        for (int i = 0; i < 1000; i++)
+            result = first.equals(second);
     }
 }

@@ -190,17 +190,17 @@ public class JAU {
     private static final Map<Class, Stringifier> STRINGIFIERS =
             new ConcurrentHashMap<Class, Stringifier>();
 
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_TO_STRING =
+    private static final Map<Class, ClassInfo> CLASSINFO_TOSTRING =
             new ConcurrentHashMap<Class, ClassInfo>();
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_HASHCODE =
+    private static final Map<Class, ClassInfo> CLASSINFO_HASHCODE =
             new ConcurrentHashMap<Class, ClassInfo>();
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_EQUALS =
+    private static final Map<Class, ClassInfo> CLASSINFO_EQUALS =
             new ConcurrentHashMap<Class, ClassInfo>();
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_COPY =
+    private static final Map<Class, ClassInfo> CLASSINFO_COPY =
             new ConcurrentHashMap<Class, ClassInfo>();
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_COMPARE =
+    private static final Map<Class, ClassInfo> CLASSINFO_COMPARETO =
             new ConcurrentHashMap<Class, ClassInfo>();
-    private static final Map<Class, ClassInfo> ANNOTATED_FOR_TOMAP =
+    private static final Map<Class, ClassInfo> CLASSINFO_TOMAP =
             new ConcurrentHashMap<Class, ClassInfo>();
 
     static {
@@ -479,12 +479,11 @@ public class JAU {
                 return result;
             }
         } else {
-            ClassInfo ci = annotatedFor(ANNOTATED_FOR_HASHCODE, ca,
+            ClassInfo ci = getClassInfo(CLASSINFO_HASHCODE, ca,
                     JAUHashCode.class, JAU_HASHCODE_INCLUDE,
                     JAU_HASHCODE_ALLFIELDS);
             if (ci.annotated) {
                 return hashCodeAnnotated(a, ci, ca,
-                        (JAUHashCode) ci.annotation,
                         initialNonZeroOddNumber, multiplierNonZeroOddNumber);
             } else {
                 HashCoder hc = HASH_CODERS.get(ca);
@@ -503,7 +502,6 @@ public class JAU {
      * @param ci class information
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
-     * @param classAnnotation annotation of the class or null
      * @param initialNonZeroOddNumber
      *            a non-zero, odd number used as the initial value
      * @param multiplierNonZeroOddNumber
@@ -511,10 +509,10 @@ public class JAU {
      * @return hash code
      */
     private static int hashCodeAnnotated(Object a, ClassInfo ci,
-            Class ca, JAUHashCode classAnnotation, int initialNonZeroOddNumber,
+            Class ca, int initialNonZeroOddNumber,
             int multiplierNonZeroOddNumber) {
-        Field[] fields = getFieldsFor(ca, JAUHashCode.class,
-                JAU_HASHCODE_INCLUDE, JAU_HASHCODE_ALLFIELDS);
+        JAUHashCode classAnnotation = (JAUHashCode) ci.annotation;
+        Field[] fields = ci.fields;
         int result = initialNonZeroOddNumber;
         for (int i = 0; i < fields.length; i++) {
             Field f = fields[i];
@@ -564,12 +562,11 @@ public class JAU {
             if (parentClass == null || parentClass == Object.class)
                 return result;
 
-            ClassInfo parentci = annotatedFor(ANNOTATED_FOR_HASHCODE,
+            ClassInfo parentci = getClassInfo(CLASSINFO_HASHCODE,
                     parentClass, JAUHashCode.class, JAU_HASHCODE_INCLUDE,
                     JAU_HASHCODE_ALLFIELDS);
             if (parentci.annotated)
                 return result + hashCodeAnnotated(a, parentci, parentClass,
-                        (JAUHashCode) parentci.annotation,
                         initialNonZeroOddNumber, multiplierNonZeroOddNumber);
             else
                 return result;
@@ -588,7 +585,7 @@ public class JAU {
      * @param allFields calls .allFields() on the annotation
      * @return information about annotation
      */
-    private static ClassInfo annotatedFor(
+    private static ClassInfo getClassInfo(
             Map<Class, ClassInfo> storedInfos,
             Class c, Class annotationClass,
             BooleanFunc includeFunc, BooleanFunc allFieldsFunc) {
@@ -637,6 +634,14 @@ public class JAU {
                     ci.types[i] = ClassInfo.OTHER_TYPE;
                 }
             }
+            if (ci.annotation instanceof JAUEquals) {
+                if (ci.annotation == null ||
+                        ((JAUEquals) ci.annotation).inherited()) {
+                    Class parentClass = c.getSuperclass();
+                    if (parentClass != null && parentClass != Object.class)
+                        ci.useParent = true;
+                }
+            }
             storedInfos.put(c, ci);
             return ci;
         } else {
@@ -680,8 +685,8 @@ public class JAU {
         if (ca != cb)
             return false;
 
-        ClassInfo ci = annotatedFor(
-                ANNOTATED_FOR_EQUALS,
+        ClassInfo ci = getClassInfo(
+                CLASSINFO_EQUALS,
                 ca, JAUEquals.class, JAU_EQUALS_INCLUDE,
                 JAU_EQUALS_ALLFIELDS);
         if (ci.annotated) {
@@ -749,7 +754,10 @@ public class JAU {
     private static boolean equalsAnnotated(Object a, Object b,
             Class ca, ClassInfo ci) throws IllegalArgumentException,
             IllegalAccessException {
-        if (IMPLEMENTATION == null) {
+        if (IMPLEMENTATION != null) {
+            if (!IMPLEMENTATION.equals(ci, a, b))
+                return false;
+        } else {
             for (Field f: ci.fields) {
                 Class c = f.getType();
                 if (c == Integer.TYPE) {
@@ -780,17 +788,11 @@ public class JAU {
                         return false;
                 }
             }
-        } else {
-            if (!IMPLEMENTATION.equals(ci, a, b))
-                return false;
         }
-        if (ci.annotation == null || ((JAUEquals) ci.annotation).inherited()) {
+        if (ci.useParent) {
             Class parentClass = ca.getSuperclass();
-            if (parentClass == null || parentClass == Object.class)
-                return true;
-
-            ClassInfo cip = annotatedFor(
-                    ANNOTATED_FOR_EQUALS,
+            ClassInfo cip = getClassInfo(
+                    CLASSINFO_EQUALS,
                     parentClass,
                     JAUEquals.class, JAU_EQUALS_INCLUDE, JAU_EQUALS_ALLFIELDS);
             if (cip.annotated)
@@ -865,10 +867,10 @@ public class JAU {
                 }
             }
         } else {
-            ClassInfo ci = annotatedFor(ANNOTATED_FOR_COPY, ca, JAUCopy.class, 
+            ClassInfo ci = getClassInfo(CLASSINFO_COPY, ca, JAUCopy.class,
                     JAU_COPY_INCLUDE, JAU_COPY_ALLFIELDS);
             if (ci.annotated) {
-                copyAnnotated(a, b, ca, (JAUCopy) ci.annotation, ci);
+                copyAnnotated(a, b, ca, ci);
             } else {
                 Copier copier = COPIERS.get(ca);
                 if (copier != null)
@@ -991,7 +993,8 @@ public class JAU {
      * @return true = equals
      */
     private static void copyAnnotated(Object a, Object b,
-            Class ca, JAUCopy classAnnotation, ClassInfo ci) {
+            Class ca, ClassInfo ci) {
+        JAUCopy classAnnotation = (JAUCopy) ci.annotation;
         for (int i = 0; i < ci.fields.length; i++) {
             Field f = ci.fields[i];
             try {
@@ -1033,13 +1036,11 @@ public class JAU {
             if (parentClass == null || parentClass == Object.class)
                 return;
 
-            ClassInfo parentci = annotatedFor(ANNOTATED_FOR_COPY,
+            ClassInfo parentci = getClassInfo(CLASSINFO_COPY,
                     parentClass, JAUCopy.class, JAU_COPY_INCLUDE,
                     JAU_COMPARETO_ALLFIELDS);
             if (parentci.annotated)
-                copyAnnotated(a, b, parentClass,
-                        (JAUCopy) parentClass.getAnnotation(JAUCopy.class),
-                        parentci);
+                copyAnnotated(a, b, parentClass, parentci);
         }
     }
 
@@ -1135,22 +1136,18 @@ public class JAU {
                 float[] arra = (float[]) a;
                 float[] arrb = (float[]) b;
                 for (int i = 0; i < ub; i++) {
-                    if (arra[i] != arrb[i]) {
-                        if (arra[i] < arrb[i])
-                            return -1;
-                        else
-                            return 1;
-                    }
+                    int r = Float.compare(arra[i], arrb[i]);
+                    if (r != 0)
+                        return r;
                 }
             } else if (ca == double[].class) {
                 double[] arra = (double[]) a;
                 double[] arrb = (double[]) b;
                 for (int i = 0; i < ub; i++) {
                     if (arra[i] != arrb[i]) {
-                        if (arra[i] < arrb[i])
-                            return -1;
-                        else
-                            return 1;
+                        int r = Double.compare(arra[i], arrb[i]);
+                        if (r != 0)
+                            return r;
                     }
                 }
             } else if (ca == boolean[].class) {
@@ -1176,12 +1173,11 @@ public class JAU {
 
             return lengtha - lengthb;
         } else {
-            ClassInfo ci = annotatedFor(ANNOTATED_FOR_COMPARE, ca,
+            ClassInfo ci = getClassInfo(CLASSINFO_COMPARETO, ca,
                     JAUCompareTo.class, JAU_COMPARETO_INCLUDE,
                     JAU_COMPARETO_ALLFIELDS);
             if (ci.annotated) {
-                return compareAnnotated(a, b, ca,
-                        (JAUCompareTo) ci.annotation);
+                return compareAnnotated(a, b, ca, ci);
             } else if (a instanceof Comparable) {
                 return ((Comparable) a).compareTo(b);
             } else {
@@ -1203,22 +1199,24 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param ci cached class information
      * @return true = equals
      */
     private static int compareAnnotated(Object a, Object b,
-            Class ca, JAUCompareTo classAnnotation) {
+            Class ca, ClassInfo ci) {
+        JAUCompareTo classAnnotation = (JAUCompareTo) ci.annotation;
         int inheritedCompare = 0;
         if (classAnnotation == null || classAnnotation.inherited()) {
             Class parentClass = ca.getSuperclass();
             if (parentClass == null || parentClass == Object.class) {
                 // nothing
             } else {
-                ClassInfo parentci = annotatedFor(ANNOTATED_FOR_COMPARE,
+                ClassInfo parentci = getClassInfo(CLASSINFO_COMPARETO,
                         parentClass, JAUCompareTo.class, JAU_COMPARETO_INCLUDE,
                         JAU_COMPARETO_ALLFIELDS);
                 if (parentci.annotated)
                     inheritedCompare = compareAnnotated(a, b, parentClass,
-                            (JAUCompareTo) parentci.annotation);
+                            parentci);
             }
         }
         if (inheritedCompare != 0)
@@ -1356,7 +1354,7 @@ public class JAU {
         } else if (ca == String.class) {
             sb.append('\"').append(a).append('\"');
         } else {
-            ClassInfo ci = annotatedFor(ANNOTATED_FOR_TO_STRING,
+            ClassInfo ci = getClassInfo(CLASSINFO_TOSTRING,
                     ca, JAUToString.class, JAU_TOSTRING_INCLUDE,
                     JAU_TOSTRING_ALLFIELDS);
             if (ci.annotated) {
@@ -1364,8 +1362,7 @@ public class JAU {
                         append(Integer.toHexString(
                         System.identityHashCode(a))).append("(");
                 try {
-                    toStringAnnotated(sb, a, ca,
-                            (JAUToString) ci.annotation, manyLines);
+                    toStringAnnotated(sb, a, ca, ci, manyLines);
                 } catch (IllegalArgumentException ex) {
                     throw (InternalError) new InternalError(
                             ex.getMessage()).initCause(ex);
@@ -1392,16 +1389,19 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param ci cached class information
      * @param manyLines spreads the string representation over many lines
      * @return string representation
      */
     private static void toStringAnnotated(StringBuilder sb, Object a,
-            Class ca, JAUToString classAnnotation, boolean manyLines)
+            Class ca, ClassInfo ci, boolean manyLines)
             throws IllegalArgumentException, IllegalAccessException {
+        JAUToString classAnnotation = (JAUToString) ci.annotation;
         boolean first = true;
 
-        for (Field f: getFieldsFor(ca, JAUToString.class, JAU_TOSTRING_INCLUDE,
-                JAU_TOSTRING_ALLFIELDS)) {
+        int len = ci.fields.length;
+        for (int i = 0; i < len; i++) {
+            Field f = ci.fields[i];
             if (manyLines) {
                 if (!first)
                     sb.append(",\n    ");
@@ -1412,60 +1412,48 @@ public class JAU {
                     sb.append(", ");
             }
             sb.append(f.getName()).append('=');
-                fieldToString(sb, f, a, manyLines);
-                first = false;
+            switch (ci.types[i]) {
+                case ClassInfo.BYTE_TYPE:
+                    sb.append(f.getByte(a));
+                    break;
+                case ClassInfo.SHORT_TYPE:
+                    sb.append(f.getShort(a));
+                    break;
+                case ClassInfo.INTEGER_TYPE:
+                    sb.append(f.getInt(a));
+                    break;
+                case ClassInfo.LONG_TYPE:
+                    sb.append(f.getLong(a));
+                    break;
+                case ClassInfo.FLOAT_TYPE:
+                    sb.append(f.getFloat(a));
+                    break;
+                case ClassInfo.DOUBLE_TYPE:
+                    sb.append(f.getDouble(a));
+                    break;
+                case ClassInfo.CHARACTER_TYPE:
+                    sb.append(f.getChar(a));
+                    break;
+                default:
+                    toString(sb, f.get(a), manyLines);
+            }
+            first = false;
         }
         if (classAnnotation == null || classAnnotation.inherited()) {
             Class parentClass = ca.getSuperclass();
             if (parentClass == null || parentClass == Object.class) {
                 // nothing
             } else {
-                ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TO_STRING,
+                ClassInfo parentci = getClassInfo(CLASSINFO_TOSTRING,
                         parentClass, JAUToString.class, JAU_TOSTRING_INCLUDE,
                         JAU_TOSTRING_ALLFIELDS);
                 if (parentci.annotated) {
                     if (!first)
                         sb.append(", ");
                     toStringAnnotated(sb, a, parentClass,
-                            (JAUToString) parentci.annotation, manyLines);
+                            parentci, manyLines);
                 }
             }
-        }
-    }
-
-    /**
-     * Optimized version for appending value of a field to string
-     * representation.
-     * 
-     * @param sb output
-     * @param f value of this field will be appended
-     * @param a value for the field will be read from this object
-     * @param manyLines true = spread string representation over many lines
-     */
-    private static void fieldToString(StringBuilder sb, Field f, Object a,
-            boolean manyLines)
-            throws IllegalArgumentException, IllegalAccessException {
-        Class c = f.getType();
-        if (c.isPrimitive()) {
-            if (c == Byte.TYPE) {
-                sb.append(f.getByte(a));
-            } else if (c == Short.TYPE) {
-                sb.append(f.getShort(a));
-            } else if (c == Integer.TYPE) {
-                sb.append(f.getInt(a));
-            } else if (c == Long.TYPE) {
-                sb.append(f.getLong(a));
-            } else if (c == Float.TYPE) {
-                sb.append(f.getFloat(a));
-            } else if (c == Double.TYPE) {
-                sb.append(f.getDouble(a));
-            } else if (c == Character.TYPE) {
-                sb.append(f.getChar(a));
-            } else {
-                toString(sb, f.get(a), manyLines);
-            }
-        } else {
-            toString(sb, f.get(a), manyLines);
         }
     }
 
@@ -1486,7 +1474,7 @@ public class JAU {
      *     enumeration value or an array or the class of <code>a</code> or
      *     <code>b</code> is not annotated with JAUToMap
      */
-    public static void transferFields(Object a, Object b, boolean clone) {
+    /*public static void transferFields(Object a, Object b, boolean clone) {
         Map<String, Object> m = toMap(a);
         if (clone) {
             Map<String, Object> copy = new HashMap<String, Object>();
@@ -1496,7 +1484,7 @@ public class JAU {
             m = copy;
         }
         fromMap(m, b);
-    }
+    }*/
 
     /**
      * Creates a map filled with properties from an object. Classes
@@ -1524,11 +1512,11 @@ public class JAU {
             throw new IllegalArgumentException(
                     "toMap() does not work for arrays and enumeration values");
 
-        ClassInfo ci = annotatedFor(ANNOTATED_FOR_TOMAP, ca, JAUToMap.class,
+        ClassInfo ci = getClassInfo(CLASSINFO_TOMAP, ca, JAUToMap.class,
                 JAU_TOMAP_INCLUDE, JAU_TOMAP_ALLFIELDS);
         if (ci.annotated) {
             Map<String, Object> m = new HashMap<String, Object>();
-            toMapAnnotated(m, a, ca, (JAUToMap) ci.annotation);
+            toMapAnnotated(m, a, ca, ci);
             return m;
         } else
             throw new IllegalArgumentException("Class " + ca +
@@ -1543,14 +1531,13 @@ public class JAU {
      * @param a the object
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
-     * @param classAnnotation annotation of the class or null
+     * @param ci cached class information
      * @return string representation
      */
     private static void toMapAnnotated(Map<String, Object> map,
-            Object a,
-            Class ca, JAUToMap classAnnotation) {
-        Field[] fields = getFieldsFor(ca, JAUToMap.class, JAU_TOMAP_INCLUDE,
-                JAU_TOMAP_ALLFIELDS);
+            Object a, Class ca, ClassInfo ci) {
+        JAUToMap classAnnotation = (JAUToMap) ci.annotation;
+        Field[] fields = ci.fields;
         for (Field f: fields) {
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
             if (Modifier.isPrivate(f.getModifiers()))
@@ -1580,12 +1567,11 @@ public class JAU {
             if (parentClass == null || parentClass == Object.class) {
                 // nothing
             } else {
-                ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TOMAP,
+                ClassInfo parentci = getClassInfo(CLASSINFO_TOMAP,
                         parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE,
                         JAU_TOMAP_ALLFIELDS);
                 if (parentci.annotated) {
-                    toMapAnnotated(map, a, parentClass,
-                            (JAUToMap) parentci.annotation);
+                    toMapAnnotated(map, a, parentClass, parentci);
                 }
             }
         }
@@ -1614,10 +1600,10 @@ public class JAU {
         if (ca.isArray())
             return;
 
-        ClassInfo ci = annotatedFor(ANNOTATED_FOR_TOMAP, ca, JAUToMap.class,
+        ClassInfo ci = getClassInfo(CLASSINFO_TOMAP, ca, JAUToMap.class,
                 JAU_TOMAP_INCLUDE, JAU_TOMAP_ALLFIELDS);
         if (ci.annotated) {
-            fromMapAnnotated(map, a, ca, (JAUToMap) ci.annotation);
+            fromMapAnnotated(map, a, ca, ci);
         }
     }
 
@@ -1631,13 +1617,14 @@ public class JAU {
      * @param ca only fields from this class (and superclasses of it)
      *     are considered
      * @param classAnnotation annotation of the class or null
+     * @param ci cached class information
      * @return string representation
      */
     private static void fromMapAnnotated(Map<String, Object> map,
             Object a,
-            Class ca, JAUToMap classAnnotation) {
-        Field[] fields = getFieldsFor(ca, JAUToMap.class, JAU_TOMAP_INCLUDE,
-                JAU_TOMAP_ALLFIELDS);
+            Class ca, ClassInfo ci) {
+        JAUToMap classAnnotation = (JAUToMap) ci.annotation;
+        Field[] fields = ci.fields;
         for (Field f: fields) {
             JAUToMap an = (JAUToMap) f.getAnnotation(JAUToMap.class);
 
@@ -1668,12 +1655,11 @@ public class JAU {
             if (parentClass == null || parentClass == Object.class) {
                 // nothing
             } else {
-                ClassInfo parentci = annotatedFor(ANNOTATED_FOR_TOMAP,
+                ClassInfo parentci = getClassInfo(CLASSINFO_TOMAP,
                         parentClass, JAUToMap.class, JAU_TOMAP_INCLUDE,
                         JAU_TOMAP_ALLFIELDS);
                 if (parentci.annotated) {
-                    fromMapAnnotated(map, a, parentClass,
-                            (JAUToMap) parentci.annotation);
+                    fromMapAnnotated(map, a, parentClass, parentci);
                 }
             }
         }

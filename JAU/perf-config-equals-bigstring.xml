@@ -27,6 +27,9 @@
     <testCase name="test100">
         <param name="n" value="100"/>
     </testCase>
+    <testCase name="test500">
+        <param name="n" value="500"/>
+    </testCase>
     <testCase name="test1000">
         <param name="n" value="1000"/>
     </testCase>

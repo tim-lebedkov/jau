@@ -52,4 +52,10 @@ public class RealClass {
         hash = 23 * hash + (this.txt != null ? this.txt.hashCode() : 0);
         return hash;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                    "(x="+x + ", y="+ y + ", z="+z + ", a="+a+", txt=\""+txt+"\")";
+    }
 }
