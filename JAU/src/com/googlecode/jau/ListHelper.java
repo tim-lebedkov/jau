@@ -8,7 +8,8 @@ import java.util.ListIterator;
 /**
  * hashcode()/equals() for a list
  */
-class ListHelper<E, T extends List<E>> implements HashCoder<T>, Comparator<T> {
+class ListHelper<E, T extends List<E>> implements HashCoder<T>, Comparator<T>,
+Stringifier<T> {
     /** an instance of this class. */
     public static final HashCoder INSTANCE = new ListHelper();
 
@@ -45,5 +46,22 @@ class ListHelper<E, T extends List<E>> implements HashCoder<T>, Comparator<T> {
             return -1;
         else
             return 0;
+    }
+
+    @Override
+    public String toString(T a) {
+        Iterator<E> i = a.iterator();
+        if (! i.hasNext())
+            return "[]";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        for (;;) {
+            E e = i.next();
+            JAU.toString(sb, e, false);
+            if (! i.hasNext())
+                return sb.append(']').toString();
+            sb.append(", ");
+        }
     }
 }
