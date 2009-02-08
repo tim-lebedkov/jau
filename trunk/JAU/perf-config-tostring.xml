@@ -5,17 +5,17 @@
     <param name="japex.classPath" value="build/classes;build/test/classes"/>
     
     <param name="japex.resultUnit" value="ms"/>
-    <param name="japex.warmupIterations" value="20000"/>
-    <param name="japex.runIterations" value="1000000"/>
+    <param name="japex.warmupIterations" value="20"/>
+    <param name="japex.runIterations" value="1000"/>
 
     <driver name="toStringJAU">
         <param name="japex.driverClass" value="com.googlecode.jau.GGJAUPerfTest_"/>
-        <param name="description" value="JAU.toString() performance"/>
+        <param name="description" value="1000 x JAU.toString() performance"/>
     </driver>
 
     <driver name="toStringManual">
         <param name="japex.driverClass" value="com.googlecode.jau.GGManualPerfTest_"/>
-        <param name="description" value="Manually implemented toString() performance"/>
+        <param name="description" value="1000 x Manually implemented toString() performance"/>
     </driver>
     <testCase name="test1"/>
 </testSuite>

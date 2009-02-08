@@ -9,14 +9,11 @@ import com.sun.japex.TestCase;
  */
 @JAUToString
 public class GGJAUPerfTest_ extends JapexDriverBase {
-    private int x = 1;
-    private int y = 2;
-    private int z = 3;
-    private double a = 5.4343;
-    private String txt = "Testme";
+    private static RealClass v = new RealClass();
 
     public void run(TestCase testCase) {
-        JAU.toString(this);
+        for (int i = 0; i < 1000; i++)
+            JAU.toString(v);
     }
 
     public static void main(String[] params) {

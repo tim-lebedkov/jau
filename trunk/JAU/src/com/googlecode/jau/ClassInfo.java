@@ -30,4 +30,7 @@ final class ClassInfo {
 
     /** types of fields */
     public int[] types;
+
+    /** should superclass be considered? */
+    boolean useParent;
 }

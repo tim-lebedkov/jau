@@ -169,7 +169,7 @@ public class ToMapTest {
         System.out.println(JAU.toString(map));
     }
 
-    @Test
+    /*@Test
     public void transferFields() {
         ClassOne a = new ClassOne();
         ClassTwo b = new ClassTwo();
@@ -187,5 +187,5 @@ public class ToMapTest {
         assertTrue(JAU.toString(mapa) + " <> " +
                 JAU.toString(mapb), JAU.equals(mapa, mapb));
         assertTrue(a.floata != b.floata);
-    }
+    }*/
 }
