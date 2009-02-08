@@ -3,6 +3,7 @@ package com.googlecode.jau;
 import com.googlecode.jau.equals.EqualsAnnotatedThroughPackage;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Vector;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -25,7 +26,7 @@ public class EqualsTest {
      *
      * @param a first object or null
      * @param b second object or null
-     * @param c true = test clone() too
+     * @param clone true = test clone() too
      * @param uncomparable true = JAU.compare() should throw an
      *     IllegalArgumentException, false = 0 should be returned
      */
@@ -290,5 +291,23 @@ public class EqualsTest {
     public void stringBuffer() {
         ensureEqual(new StringBuffer("a"), new StringBuffer("a"));
         ensureUnequal(new StringBuffer("a"), new StringBuffer("b"));
+    }
+
+    @Test
+    public void vector() {
+        Vector a = new Vector();
+        a.add("test");
+        a.add(new Integer(2546));
+        a.add(ColorsEnum.GREEN);
+
+        Vector b = new Vector();
+        b.add("test");
+        b.add(new Integer(2546));
+        b.add(ColorsEnum.GREEN);
+
+        ensureEqual(a, b, false, false);
+
+        b.set(0, "test2");
+        ensureUnequal(a, b, false, false);
     }
 }
