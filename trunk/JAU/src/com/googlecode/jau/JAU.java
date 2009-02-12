@@ -136,6 +136,19 @@ public class JAU {
 
     /**
      * Default comparator that uses
+     * {@link #equals(java.lang.Object, java.lang.Object) }
+     * for object comparison. The returned value is 0 if objects are equal
+     * and a non-zero if they are different.
+     */
+    public static final Comparator EQUALS_COMPARATOR = new Comparator() {
+        @Override
+        public int compare(Object o1, Object o2) {
+            return JAU.equals(o1, o2) ? 0 : -1;
+        }
+    };
+
+    /**
+     * Default comparator that uses
      * {@link #hashCode(java.lang.Object) } for hash code computing.
      */
     public static final HashCoder HASHCODER = new HashCoder() {
@@ -289,7 +302,7 @@ public class JAU {
     }
 
     /**
-     * Registers a user defined Comparator for a class
+     * Registers a user defined Comparator for a class.
      * A comparator cannot be registered for an array, a primitive type, an
      * interface or a type that implements {@link Comparable}
      *
@@ -386,7 +399,7 @@ public class JAU {
     }
 
     /**
-     * Generates hash code for an object {@link Object#hashCode()}. Classes 
+     * Generates hash code for an object like {@link Object#hashCode()}. Classes
      * should be annotated using {@link JAUHashCode} (directly or through the
      * corresponding package) for automatic computation of hash code
      * via reflection. Another way
@@ -407,7 +420,7 @@ public class JAU {
     }
 
     /**
-     * Generates hash code for an object {@link Object#hashCode()}. Classes
+     * Generates hash code for an object like {@link Object#hashCode()}. Classes
      * should be annotated using {@link JAUHashCode} (directly or through the
      * corresponding package) for automatic computation of hash code
      * via reflection. Another way
@@ -655,7 +668,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects {@link Object#equals(java.lang.Object)}. Classes
+     * Compares 2 objects like {@link Object#equals(java.lang.Object)}. Classes
      * should be annotated using @JAUEquals (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
@@ -810,7 +823,7 @@ public class JAU {
     }
 
     /**
-     * Copies all data from one object to another (deep copy)
+     * Copies all data from one object to another (deep copy).
      * Classes should be annotated using JAUCopy (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
@@ -882,6 +895,7 @@ public class JAU {
     }
 
     /**
+     * Creates a deep copy of an object.
      * Firstly, this method creates an object: either by
      * <ul>
      *  <li>- invoking clone if the class of a implements Cloneable</li>
@@ -1326,7 +1340,7 @@ public class JAU {
      * Enums are represented as "com.example.EnumClass.VALUE"
      *
      * @param sb string representation will be stored here
-     * @param an object or null
+     * @param a an object or null
      * @param manyLines true = spread string representatio over many lines
      */
     public static void toString(StringBuilder sb, Object a, boolean manyLines) {

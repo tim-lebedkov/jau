@@ -5,7 +5,8 @@ package com.googlecode.jau;
  */
 public interface Copier<T> {
     /**
-     * Copies content of one object to another.
+     * Copies content of one object to another. Field values are deeply
+     * cloned and put into another object.
      *
      * @param a source
      * @param b target
