@@ -149,7 +149,7 @@ public class JAU {
 
     /**
      * Default comparator that uses
-     * {@link #hashCode(java.lang.Object) } for hash code computing.
+     * {@link #hashCode(java.lang.Object)} for hash code computing.
      */
     public static final HashCoder HASHCODER = new HashCoder() {
         @Override
@@ -248,8 +248,10 @@ public class JAU {
      * or a primitive type.
      * 
      * Copiers for the following classes are defined by default:
-     *     java.lang.StringBuffer
-     *     java.lang.StringBuilder
+     * <ul>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
+     * </ul>
      *
      * @param c a class
      * @param copier a copier for the class
@@ -277,10 +279,12 @@ public class JAU {
      * or a primitive type.
      *
      * Stringifiers for the following classes are defined by default:
-     *     java.util.HashMap
-     *     java.util.Hashtable
-     *     java.util.Vector
-     *     java.util.ArrayList
+     * <ul>
+     *  <li>{@link java.util.HashMap}</li>
+     *  <li>{@link java.util.Hashtable}</li>
+     *  <li>{@link java.util.Vector}</li>
+     *  <li>{@link java.util.ArrayList}</li>
+     * </ul>
      *
      * @param c a class
      * @param stringifier an implementation for computing string representation
@@ -307,11 +311,13 @@ public class JAU {
      * interface or a type that implements {@link Comparable}
      *
      * Comparators for the following classes are defined by default:
-     *     java.lang.StringBuffer
-     *     java.lang.StringBuilder
-     *     java.lang.Vector
-     *     java.lang.ArrayList
-     * 
+     * <ul>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
+     *  <li>{@link java.lang.Vector}</li>
+     *  <li>{@link java.lang.ArrayList}</li>
+     * </ul>
+     *
      * @param c a class
      * @param copier a copier for the class
      */
@@ -334,17 +340,19 @@ public class JAU {
 
     /**
      * Registers a user defined Comparator for a class that is used in
-     * JAU.equals.
+     * {@link JAU#equals(java.lang.Object)}.
      * A comparator cannot be registered for an array, a primitive type,
      * an interface or a type that implements {@link Comparable}
      *
      * Comparators for the following classes are defined by default:
-     *     java.lang.StringBuffer
-     *     java.lang.StringBuilder
-     *     java.util.Hashtable
-     *     java.util.HashMap
-     *     java.util.Vector
-     *     java.util.ArrayList
+     * <ul>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
+     *  <li>{@link java.util.Hashtable}</li>
+     *  <li>{@link java.util.HashMap}</li>
+     *  <li>{@link java.util.Vector}</li>
+     *  <li>{@link java.util.ArrayList}</li>
+     * </ul>
      *
      * @param c a class
      * @param copier a copier for the class
@@ -372,13 +380,15 @@ public class JAU {
      * or a primitive type.
      *
      * HashCoders for the following classes are defined by default:
-     *     java.lang.StringBuffer
-     *     java.lang.StringBuilder
-     *     java.util.Hashtable
-     *     java.util.HashMap
-     *     java.util.Vector
-     *     java.util.ArrayList
-     * 
+     * <ul>
+     *  <li>{@link java.lang.StringBuffer}</li>
+     *  <li>{@link java.lang.StringBuilder}</li>
+     *  <li>{@link java.util.Hashtable}</li>
+     *  <li>{@link java.util.HashMap}</li>
+     *  <li>{@link java.util.Vector}</li>
+     *  <li>{@link java.util.ArrayList}</li>
+     * </ul>
+     *
      * @param c a class
      * @param hc a hash code algorithm for the class
      */
@@ -669,7 +679,7 @@ public class JAU {
 
     /**
      * Compares 2 objects like {@link Object#equals(java.lang.Object)}. Classes
-     * should be annotated using @JAUEquals (directly or through the
+     * should be annotated using {@link JAUEquals} (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
      * {@link #registerComparator(java.lang.Class, java.util.Comparator) }
@@ -680,17 +690,19 @@ public class JAU {
      * @param a first object or null
      * @param b second object or null
      * @return
-     *     <p>true, if (a == null) && (b == null)</p>
-     *     <p>false, if (a == null) && (b != null)</p>
-     *     <p>false, if (a != null) && (b == null)</p>
-     *     <p>true, if (a == b)</p>
-     *     <p>false, if (a.getClass() != b.getClass())</p>
-     *     <p>arrays are compared deeply using this method for each element
-     *     for classes annotated with JAUEquals</p>
-     *     <p>If a class is not annotated, but implements java.util.Map,
-     *         it is compared so JAU.equals() is called for
-     *         each value instead of a.equals(b)</p>
-     *     <p>a.equals(b) otherwise</p>
+     * <ul>
+     *     <li>true, if (a == null) && (b == null)</li>
+     *     <li>false, if (a == null) && (b != null)</li>
+     *     <li>false, if (a != null) && (b == null)</li>
+     *     <li>true, if (a == b)</li>
+     *     <li>false, if (a.getClass() != b.getClass())</li>
+     *     <li>arrays are compared deeply using this method for each element
+     *     for classes annotated with {@link JAUEquals}</li>
+     *     <li>If a class is not annotated, but implements java.util.Map,
+     *         it is compared so {@link #equals(java.lang.Object)} is called for
+     *         each value instead of a.equals(b)</li>
+     *     <li>a.equals(b) otherwise</li>
+     * </ul>
      */
     public static boolean equals(Object a, Object b) {
         if (a == b)
@@ -760,7 +772,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects annotated by JAUEquals
+     * Compares 2 objects annotated by {@link JAUEquals}
      *
      * @param a first object
      * @param b second object
@@ -824,7 +836,8 @@ public class JAU {
 
     /**
      * Copies all data from one object to another (deep copy).
-     * Classes should be annotated using JAUCopy (directly or through the
+     * Classes should be annotated using {@link JAUCopy}
+     * (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
      * {@link #registerCopier(java.lang.Class, com.googlecode.jau.Copier)}
@@ -833,13 +846,17 @@ public class JAU {
      *
      * @param a first object
      * @param b second object
-     * @throws IllegalArgumentException if 
-     *     <p><code>a</code> or <code>b</code> are instances of different classes</p>
-     *     <p>class of <code>a</code> and <code>b</code> is immutable {@link #isImmutableClass(java.lang.Class)} i </p>
-     *     <p><code>a</code> or <code>b</code> is null or</p>
-     *     <p><code>a</code> and <code>b</code> are arrays with different lenghts</p>
-     *     <p><code>a</code> or <code>b</code> is an annotation</p>
-     *     <p>class of <code>a</code> and <code>b</code> is not annotated with JAUCopy</p>
+     * @throws IllegalArgumentException if
+     * <ul>
+     *  <li><code>a</code> or <code>b</code> are instances of different classes</li>
+     *  <li>class of <code>a</code> and <code>b</code> is immutable
+     * (see {@link #clone(java.lang.Object)})</li>
+     *  <li><code>a</code> or <code>b</code> is null or</li>
+     *  <li><code>a</code> and <code>b</code> are arrays with different lenghts</li>
+     *  <li><code>a</code> or <code>b</code> is an annotation</li>
+     *  <li>class of <code>a</code> and <code>b</code> is not annotated with 
+     * {@link JAUCopy}</li>
+     * </ul>
      */
     public static void copy(Object a, Object b) {
         if (a == null || b == null)
@@ -898,27 +915,27 @@ public class JAU {
      * Creates a deep copy of an object.
      * Firstly, this method creates an object: either by
      * <ul>
-     *  <li>- invoking clone if the class of a implements Cloneable</li>
-     *  <li>- invoking the default constructor (even if it is private)</li>
-     *  <li>- invoking the copy constructor if it exists (in this case there will
+     *  <li>invoking clone if the class of a implements Cloneable</li>
+     *  <li>invoking the default constructor (even if it is private)</li>
+     *  <li>invoking the copy constructor if it exists (in this case there will
      *     be no special field copying)</li>
      * </ul>
      *
      * Copies of the following classes are not created
      * for enumerations or immutable classes:
      * <ul>
-     *  <li>String.class</li>
-     *  <li>Byte.class</li>
-     *  <li>Short.class</li>
-     *  <li>Integer.class</li>
-     *  <li>Long.class</li>
-     *  <li>Float.class</li>
-     *  <li>Double.class</li>
-     *  <li>Character.class</li>
-     *  <li>Class.class</li>
-     *  <li>Object.class</li>
-     *  <li>BigDecimal.class</li>
-     *  <li>BigInteger.class</li>
+     *  <li>{@link String}</li>
+     *  <li>{@link Byte}</li>
+     *  <li>{@link Short}</li>
+     *  <li>{@link Integer}</li>
+     *  <li>{@link Long}</li>
+     *  <li>{@link Float}</li>
+     *  <li>{@link Double}</li>
+     *  <li>{@link Character}</li>
+     *  <li>{@link Class}</li>
+     *  <li>{@link Object}</li>
+     *  <li>{@link BigDecimal}</li>
+     *  <li>{@link BigInteger}</li>
      *  <li>any enumeration class</li>
      * </ul>
      * 
@@ -995,7 +1012,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects annotated by JAUCopy
+     * Compares 2 objects annotated by {@link JAUCopy}
      *
      * @param a first object
      * @param b second object
@@ -1059,7 +1076,7 @@ public class JAU {
 
     /**
      * Compares 2 objects. Classes
-     * should be annotated using JAUCompareTo (directly or through the
+     * should be annotated using {@link JAUCompareTo} (directly or through the
      * corresponding package) to be compared using reflection. Another way
      * is to register a user defined object to copy values via
      * {@link JAU#registerComparator(java.lang.Class, java.util.Comparator)}.
@@ -1075,19 +1092,23 @@ public class JAU {
      * @param a first object or null
      * @param b second object or null
      * @return
-     *     < 0, if a < b
-     *     > 0, if a > b
-     *     0, if a = b
+     * <ul>
+     *  <li> < 0, if a < b</li>
+     *  <li> > 0, if a > b</li>
+     *  <li> 0, if a = b</li>
+     * </ul>
      *
-     *     Special cases:
-     *     0, if (a == null) && (b == null)
-     *     -1, if (a == null) && (b != null)
-     *     1, if (a != null) && (b == null)
-     *     0, if (a == b)
-     *     arrays are compared deeply using this method for each element
-     *     for classes annotated with JAUCompareTo only fields annotated with
-     *         JAUCompareTo will be taken into account and compared
-     *     a.compareTo(b) otherwise
+     * Special cases:
+     * <ul>
+     *  <li>0, if (a == null) && (b == null)</li>
+     *  <li>-1, if (a == null) && (b != null)</li>
+     *  <li>1, if (a != null) && (b == null)</li>
+     *  <li>0, if (a == b)</li>
+     *  <li>arrays are compared deeply using this method for each element
+     *  <li>for classes annotated with JAUCompareTo only fields annotated with
+     *         JAUCompareTo will be taken into account and compared</li>
+     *  <li>a.compareTo(b) otherwise</li>
+     * </ul>
      * @throws IllegalArgumentException if a.getClass() != b.getClass() or
      *     the class is not annotated and does not implement Comparable
      */
@@ -1205,7 +1226,7 @@ public class JAU {
     }
 
     /**
-     * Compares 2 objects annotated by JAUEquals
+     * Compares 2 objects annotated by {@link JAUEquals}
      *
      * @param a first object
      * @param b second object
@@ -1274,7 +1295,8 @@ public class JAU {
 
     /**
      * Generates string representation of an object ({@link Object#toString()}).
-     * Classes should be annotated using JAUToString (directly or through the
+     * Classes should be annotated using {@link JAUToString}
+     * (directly or through the
      * corresponding package) for automatic computation of string
      * representation via reflection.
      *
@@ -1294,8 +1316,8 @@ public class JAU {
      * Returns all fields necessary to perform equals() computation for the
      * specified class.
      *
-     * @param c a class annotated with JAUEquals
-     * @param annotationClass annotation class like JAUEquals
+     * @param c a class annotated with {@link JAUEquals}
+     * @param annotationClass annotation class like {@link JAUEquals}
      * @return fields
      */
     private static Field[] getFieldsFor(Class c, Class annotationClass,
@@ -1332,7 +1354,7 @@ public class JAU {
 
     /**
      * Generates string representation of an object ({@link Object#toString()}).
-     * Classes should be annotated using @JAUToString (directly or through the
+     * Classes should be annotated using {@link JAUToString} (directly or through the
      * corresponding package) for automatic computation of string
      * representation via reflection.
      *
@@ -1395,7 +1417,8 @@ public class JAU {
     }
 
     /**
-     * Computes string representation for an object annotated by JAUToString
+     * Computes string representation for an object annotated by 
+     * {@link JAUToString}
      *
      * @param sb string representation appended here
      * @param a the object
@@ -1472,7 +1495,7 @@ public class JAU {
 
     /**
      * Transfers field values from one object to another. Classes
-     * should be annotated using JAUToMap (directly or through the
+     * should be annotated using {@link JAUToMap} (directly or through the
      * corresponding package) for this to work.
      *
      * <code>a</code> and <code>b</code> may be instances of *different*
@@ -1485,7 +1508,7 @@ public class JAU {
      * @param clone if true, each field value will be cloned using JAU.clone
      * @throws IllegalArgumentException if <code>a</code> or <code>b</code> is an
      *     enumeration value or an array or the class of <code>a</code> or
-     *     <code>b</code> is not annotated with JAUToMap
+     *     <code>b</code> is not annotated with {@link JAUToMap}
      */
     /*public static void transferFields(Object a, Object b, boolean clone) {
         Map<String, Object> m = toMap(a);
@@ -1501,7 +1524,7 @@ public class JAU {
 
     /**
      * Creates a map filled with properties from an object. Classes
-     * should be annotated using JAUToMap (directly or through the
+     * should be annotated using {@link JAUToMap} (directly or through the
      * corresponding package) for this to work.
      *
      * Static and synthetic fields will be ignored.
@@ -1513,7 +1536,7 @@ public class JAU {
      *     the value from the object. The returned map is mutable.
      * @throws IllegalArgumentException if <code>a</code> is an
      *     enumeration value or an array or the class of <code>a</code> is not
-     *     annotated with JAUToMap
+     *     annotated with {@link JAUToMap}
      */
     public static Map<String, Object> toMap(Object a) {
         if (a == null)
@@ -1538,7 +1561,7 @@ public class JAU {
 
     /**
      * Fills the map with properties from an object. Classes
-     * should be annotated using JAUToMap (directly or through the
+     * should be annotated using {@link JAUToMap} (directly or through the
      * corresponding package) for this to work.
      *
      * @param a the object
@@ -1592,7 +1615,7 @@ public class JAU {
 
     /**
      * Fills an object with properties stored in a map. Classes
-     * should be annotated using JAUToMap (directly or through the
+     * should be annotated using {@link JAUToMap} (directly or through the
      * corresponding package) for this to work.
      *
      * Static and synthetic fields will be ignored.
@@ -1622,7 +1645,7 @@ public class JAU {
 
     /**
      * Fills an object with properties from a map. Classes
-     * should be annotated using JAUToMap (directly or through the
+     * should be annotated using {@link JAUToMap} (directly or through the
      * corresponding package) for this to work.
      *
      * @param map property name -> property value
@@ -1683,18 +1706,18 @@ public class JAU {
      * 
      * Following classes are considered immutable:
      * <ul>
-     *  <li>String.class</li>
-     *  <li>Byte.class</li>
-     *  <li>Short.class</li>
-     *  <li>Integer.class</li>
-     *  <li>Long.class</li>
-     *  <li>Float.class</li>
-     *  <li>Double.class</li>
-     *  <li>Character.class</li>
-     *  <li>Class.class</li>
-     *  <li>Object.class</li>
-     *  <li>BigDecimal.class</li>
-     *  <li>BigInteger.class</li>
+     *  <li>{@link String}</li>
+     *  <li>{@link Byte}</li>
+     *  <li>{@link Short}</li>
+     *  <li>{@link Integer}</li>
+     *  <li>{@link Long}</li>
+     *  <li>{@link Float}</li>
+     *  <li>{@link Double}</li>
+     *  <li>{@link Character}</li>
+     *  <li>{@link Class}</li>
+     *  <li>{@link Object}</li>
+     *  <li>{@link BigDecimal}</li>
+     *  <li>{@link BigInteger}</li>
      *  <li>any enumeration class</li>
      * </ul>
      *
