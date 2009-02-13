@@ -17,17 +17,17 @@ public class CopyTest {
         JAU.copy(new int[] {2}, new int[] {2, 3});
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=NullPointerException.class)
     public void null1() {
         JAU.copy(null, new int[] {2, 3});
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=NullPointerException.class)
     public void null2() {
         JAU.copy(new int[] {2, 3}, null);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=NullPointerException.class)
     public void nullBoth() {
         JAU.copy(null, null);
     }

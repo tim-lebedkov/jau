@@ -127,7 +127,7 @@ public class ToMapTest {
         assertEquals(m, JAU.toMap(new BigDecimal(1023)));
     }
 
-    @Test
+    @Test(expected=NullPointerException.class)
     public void null_() {
         HashMap m = new HashMap();
         assertEquals(m, JAU.toMap(null));

@@ -851,16 +851,16 @@ public class JAU {
      *  <li><code>a</code> or <code>b</code> are instances of different classes</li>
      *  <li>class of <code>a</code> and <code>b</code> is immutable
      * (see {@link #clone(java.lang.Object)})</li>
-     *  <li><code>a</code> or <code>b</code> is null or</li>
      *  <li><code>a</code> and <code>b</code> are arrays with different lenghts</li>
      *  <li><code>a</code> or <code>b</code> is an annotation</li>
      *  <li>class of <code>a</code> and <code>b</code> is not annotated with 
      * {@link JAUCopy}</li>
      * </ul>
+     * @throws NullPointerException if <code>a</code> or <code>b</code> is null
      */
     public static void copy(Object a, Object b) {
         if (a == null || b == null)
-            throw new IllegalArgumentException("a or b is null");
+            throw new NullPointerException("a or b is null");
 
         if (a == b)
             return;
@@ -940,7 +940,7 @@ public class JAU {
      * </ul>
      * 
      * @param a an object or null
-     * @return null, if a == null, copy of a otherwise
+     * @return null, if a == null, copy of {@code a} otherwise
      */
     public static Object clone(Object a) {
         if (a == null)
@@ -1362,7 +1362,7 @@ public class JAU {
      * Enums are represented as "com.example.EnumClass.VALUE"
      *
      * @param sb string representation will be stored here
-     * @param a an object or null
+     * @param a an object or null 
      * @param manyLines true = spread string representatio over many lines
      */
     public static void toString(StringBuilder sb, Object a, boolean manyLines) {
@@ -1529,18 +1529,18 @@ public class JAU {
      *
      * Static and synthetic fields will be ignored.
      *
-     * @param a object or null
+     * @param a object
      * @return a map filled with the property values from <code>a</code>.
-     *     An empty map is returned if <code>a</code> is null. Otherwise
-     *     there will be an entry for every property from <code>a</code> with
+     *     There will be an entry for every property from <code>a</code> with
      *     the value from the object. The returned map is mutable.
      * @throws IllegalArgumentException if <code>a</code> is an
      *     enumeration value or an array or the class of <code>a</code> is not
      *     annotated with {@link JAUToMap}
+     * @throws NullPointerException if {@code a} is null
      */
     public static Map<String, Object> toMap(Object a) {
         if (a == null)
-            return new HashMap();
+            throw new NullPointerException("Object cannot be null");
 
         Class ca = a.getClass();
 
@@ -1620,16 +1620,17 @@ public class JAU {
      *
      * Static and synthetic fields will be ignored.
      *
-     * @param a object or null
+     * @param a an object
      * @param map a map filled with the property values, which will be
      *     stored in <code>a</code>.
-     *     Nothing is done if <code>a</code> is null or the class of
-     *     <code>a</code> is not annotated or an array. Otherwise
-     *     properties stored in <code>a</code>.
+     * @throws IllegalArgumentException if <code>a</code> is an
+     *     enumeration value or an array or the class of <code>a</code> is not
+     *     annotated with {@link JAUToMap}
+     * @throws NullPointerException if a is null
      */
     public static void fromMap(Map<String, Object> map, Object a) {
         if (a == null)
-            return;
+            throw new NullPointerException("Object cannot be null");
 
         Class ca = a.getClass();
 
@@ -1640,7 +1641,9 @@ public class JAU {
                 JAU_TOMAP_INCLUDE, JAU_TOMAP_ALLFIELDS);
         if (ci.annotated) {
             fromMapAnnotated(map, a, ca, ci);
-        }
+        } else
+            throw new IllegalArgumentException("Class " + ca +
+                    " is not annotated with JAUToMap");
     }
 
     /**
