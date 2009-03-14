@@ -1,0 +1,10 @@
+#summary Performance of the library.
+
+= Introduction =
+
+Currently the library uses Java reflection API. That's why the current implementation is slower than implementing e.g. equals() manually. On the other hand the performance difference may be acceptable in particular cases. Additionally, nothing in the JAU API prevents an implementation using code generation or other techniques.
+
+= Details =
+
+Performance of .equals():
+TODO
