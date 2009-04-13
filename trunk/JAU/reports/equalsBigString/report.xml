@@ -1,0 +1,98 @@
+<testSuiteReport name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuiteReport">
+  <chartType>barchart</chartType>
+  <classPath>build/classes
+build/test/classes</classPath>
+  <configFile>perf-config-equals-bigstring.xml</configFile>
+  <dateTime>13 Apr 2009/20:23:41 CEST</dateTime>
+  <hostName>timpc2</hostName>
+  <numberOfCpus>2</numberOfCpus>
+  <numberOfThreads>1</numberOfThreads>
+  <osArchitecture>x86</osArchitecture>
+  <osName>Windows XP</osName>
+  <plotDrivers>false</plotDrivers>
+  <plotGroupSize>5</plotGroupSize>
+  <reportsDirectory>reports</reportsDirectory>
+  <resultAxis>normal</resultAxis>
+  <resultAxisX>normal</resultAxisX>
+  <resultUnit>ms</resultUnit>
+  <runIterations>10000000</runIterations>
+  <runsPerDriver>1</runsPerDriver>
+  <version>1.1.0</version>
+  <vmInfo>Sun Microsystems Inc. 11.2-b01</vmInfo>
+  <warmupIterations>20000</warmupIterations>
+  <warmupsPerDriver>0</warmupsPerDriver>
+  <driver name="equalsJAU">
+    <driverClass>com.googlecode.jau.EqualsJAUStringPerfTest_</driverClass>
+    <resultAritMean>0.002</resultAritMean>
+    <resultGeomMean>0.001</resultGeomMean>
+    <resultHarmMean>0.001</resultHarmMean>
+    <description xmlns="">JAU.equals() performance for a class with only one String field</description>
+    <testCase name="test1">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>2.756</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">1</n>
+    </testCase>
+    <testCase name="test10">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>3.190</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">10</n>
+    </testCase>
+    <testCase name="test100">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>6.980</resultTime>
+      <resultValue>0.001</resultValue>
+      <n xmlns="">100</n>
+    </testCase>
+    <testCase name="test500">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>23.844</resultTime>
+      <resultValue>0.002</resultValue>
+      <n xmlns="">500</n>
+    </testCase>
+    <testCase name="test1000">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>44.818</resultTime>
+      <resultValue>0.004</resultValue>
+      <n xmlns="">1000</n>
+    </testCase>
+  </driver>
+  <driver name="equalsManual">
+    <driverClass>com.googlecode.jau.EqualsManualStringPerfTest_</driverClass>
+    <resultAritMean>0.001</resultAritMean>
+    <resultGeomMean>0.000</resultGeomMean>
+    <resultHarmMean>0.000</resultHarmMean>
+    <description xmlns="">Manually implemented equals() performance for a class with only one String field</description>
+    <testCase name="test1">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.322</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">1</n>
+    </testCase>
+    <testCase name="test10">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.763</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">10</n>
+    </testCase>
+    <testCase name="test100">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>4.547</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">100</n>
+    </testCase>
+    <testCase name="test500">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>21.957</resultTime>
+      <resultValue>0.002</resultValue>
+      <n xmlns="">500</n>
+    </testCase>
+    <testCase name="test1000">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>41.934</resultTime>
+      <resultValue>0.004</resultValue>
+      <n xmlns="">1000</n>
+    </testCase>
+  </driver>
+</testSuiteReport>

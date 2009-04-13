@@ -6,7 +6,7 @@
     
     <param name="japex.resultUnit" value="ms"/>
     <param name="japex.warmupIterations" value="20000"/>
-    <param name="japex.runIterations" value="10000000"/>
+    <param name="japex.runIterations" value="100000000"/>
 
     <driver name="equalsJAU">
         <param name="japex.driverClass" value="com.googlecode.jau.EqualsJAUPerfTest_"/>
@@ -18,5 +18,5 @@
         <param name="description" value="Manually implemented equals() performance"/>
     </driver>
 
-    <testCase name="test1"/>
+    <testCase name="equals"/>
 </testSuite>

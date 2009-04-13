@@ -49,7 +49,6 @@ public class EqualsManualIntPerfTest_ extends JapexDriverBase {
     }
 
     public void run(TestCase testCase) {
-        for (int i = 0; i < 1000; i++)
-            result = first.equals(second);
+        result = first.equals(second);
     }
 }

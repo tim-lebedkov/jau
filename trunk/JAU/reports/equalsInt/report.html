@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns:extrep="http://www.sun.com/japex/extendedTestSuiteReport" xmlns:suite="http://www.sun.com/japex/testSuite" xmlns:rep="http://www.sun.com/japex/testSuiteReport" xmlns="http://www.w3.org/1999/xhtml">
+<link href="report.css" type="text/css" rel="stylesheet"/>
+<body>
+<table border="0" cellpadding="2">
+<tr>
+<td valign="middle" width="90">
+<p>
+<a href="https://japex.dev.java.net">
+<img src="small_japex.gif" align="middle" border="0"/>
+</a>
+</p>
+</td>
+<td valign="middle">
+<h1>Japex Report: JAUPerformance</h1>
+</td>
+</tr>
+</table>
+<h2>Global Parameters</h2>
+<ul>
+<li>configFile: <a href="perf-config-equals-int.xml">perf-config-equals-int.xml</a>
+</li>
+<li>chartType: barchart</li>
+<li>classPath: build/classes
+build/test/classes</li>
+<li>dateTime: 13 Apr 2009/20:20:05 CEST</li>
+<li>hostName: timpc2</li>
+<li>numberOfCpus: 2</li>
+<li>numberOfThreads: 1</li>
+<li>osArchitecture: x86</li>
+<li>osName: Windows XP</li>
+<li>plotDrivers: false</li>
+<li>plotGroupSize: 5</li>
+<li>reportsDirectory: reports</li>
+<li>resultAxis: normal</li>
+<li>resultAxisX: normal</li>
+<li>resultUnit: ms</li>
+<li>runIterations: 10000000</li>
+<li>runsPerDriver: 1</li>
+<li>version: 1.1.0</li>
+<li>vmInfo: Sun Microsystems Inc. 11.2-b01</li>
+<li>warmupIterations: 20000</li>
+<li>warmupsPerDriver: 0</li>
+</ul>
+<h2>Result Summary 
+        (ms)</h2>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th width="15%">
+<b>driver</b>
+</th>
+<th>
+<b>resultAritMean</b>
+</th>
+<th>
+<b>resultGeomMean</b>
+</th>
+<th>
+<b>resultHarmMean</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">equalsJAU</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">equalsManual</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<br/>
+<center>
+<img src="result.jpg"/>
+</center>
+<br/>
+<br/>
+<h2>Driver: equalsJAU</h2>
+<p>
+<ul>
+<li>driverClass: com.googlecode.jau.EqualsJAUIntPerfTest_</li>
+<li>description: JAU.equals() performance</li>
+</ul>
+</p>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th>
+<b>testCase</b>
+</th>
+<th>
+<b>resultIterations</b>
+</th>
+<th>
+<b>resultTime</b>
+</th>
+<th>
+<b>resultValue</b>
+</th>
+<th>
+<b>n</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">test1</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>1.072</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>1</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test2</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.999</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>2</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test4</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>1.241</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>4</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test8</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>1.609</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>8</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test16</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>2.450</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>16</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test32</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>3.919</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>32</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<h2>Driver: equalsManual</h2>
+<p>
+<ul>
+<li>driverClass: com.googlecode.jau.EqualsManualIntPerfTest_</li>
+<li>description: Manually implemented equals() performance</li>
+</ul>
+</p>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th>
+<b>testCase</b>
+</th>
+<th>
+<b>resultIterations</b>
+</th>
+<th>
+<b>resultTime</b>
+</th>
+<th>
+<b>resultValue</b>
+</th>
+<th>
+<b>n</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">test1</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.180</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>1</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test2</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.183</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>2</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test4</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.206</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>4</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test8</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.243</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>8</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test16</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.279</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>16</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">test32</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.399</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="left">
+<nobr>32</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<h2>Results Per Test</h2>
+<br/>
+<center>
+<img src="testcase0.jpg"/>
+</center>
+<br/>
+<br/>
+<center>
+<img src="testcase1.jpg"/>
+</center>
+<br/>
+<br/>
+<br/>
+<small>
+<hr/>
+<font size="-2">
+                        Generated using <a href="https://japex.dev.java.net">Japex</a> version 
+                        1.1.0</font>
+</small>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<testSuiteReport name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuiteReport">
+  <chartType>barchart</chartType>
+  <classPath>build/classes
+build/test/classes</classPath>
+  <configFile>perf-config-equals-int.xml</configFile>
+  <dateTime>13 Apr 2009/20:20:05 CEST</dateTime>
+  <hostName>timpc2</hostName>
+  <numberOfCpus>2</numberOfCpus>
+  <numberOfThreads>1</numberOfThreads>
+  <osArchitecture>x86</osArchitecture>
+  <osName>Windows XP</osName>
+  <plotDrivers>false</plotDrivers>
+  <plotGroupSize>5</plotGroupSize>
+  <reportsDirectory>reports</reportsDirectory>
+  <resultAxis>normal</resultAxis>
+  <resultAxisX>normal</resultAxisX>
+  <resultUnit>ms</resultUnit>
+  <runIterations>10000000</runIterations>
+  <runsPerDriver>1</runsPerDriver>
+  <version>1.1.0</version>
+  <vmInfo>Sun Microsystems Inc. 11.2-b01</vmInfo>
+  <warmupIterations>20000</warmupIterations>
+  <warmupsPerDriver>0</warmupsPerDriver>
+  <driver name="equalsJAU">
+    <driverClass>com.googlecode.jau.EqualsJAUIntPerfTest_</driverClass>
+    <resultAritMean>0.000</resultAritMean>
+    <resultGeomMean>0.000</resultGeomMean>
+    <resultHarmMean>0.000</resultHarmMean>
+    <description xmlns="">JAU.equals() performance</description>
+    <testCase name="test1">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>1.072</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">1</n>
+    </testCase>
+    <testCase name="test2">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.999</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">2</n>
+    </testCase>
+    <testCase name="test4">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>1.241</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">4</n>
+    </testCase>
+    <testCase name="test8">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>1.609</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">8</n>
+    </testCase>
+    <testCase name="test16">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>2.450</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">16</n>
+    </testCase>
+    <testCase name="test32">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>3.919</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">32</n>
+    </testCase>
+  </driver>
+  <driver name="equalsManual">
+    <driverClass>com.googlecode.jau.EqualsManualIntPerfTest_</driverClass>
+    <resultAritMean>0.000</resultAritMean>
+    <resultGeomMean>0.000</resultGeomMean>
+    <resultHarmMean>0.000</resultHarmMean>
+    <description xmlns="">Manually implemented equals() performance</description>
+    <testCase name="test1">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.180</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">1</n>
+    </testCase>
+    <testCase name="test2">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.183</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">2</n>
+    </testCase>
+    <testCase name="test4">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.206</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">4</n>
+    </testCase>
+    <testCase name="test8">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.243</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">8</n>
+    </testCase>
+    <testCase name="test16">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.279</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">16</n>
+    </testCase>
+    <testCase name="test32">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.399</resultTime>
+      <resultValue>0.000</resultValue>
+      <n xmlns="">32</n>
+    </testCase>
+  </driver>
+</testSuiteReport>

@@ -18,5 +18,5 @@
         <param name="description" value="Manually implemented equals() performance"/>
     </driver>
 
-    <testCase name="test1"/>
+    <testCase name="hashCode"/>
 </testSuite>

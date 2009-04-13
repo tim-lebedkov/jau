@@ -1,0 +1,48 @@
+<testSuiteReport name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuiteReport">
+  <chartType>barchart</chartType>
+  <classPath>build/classes
+build/test/classes</classPath>
+  <configFile>perf-config-hashcode.xml</configFile>
+  <dateTime>13 Apr 2009/20:27:01 CEST</dateTime>
+  <hostName>timpc2</hostName>
+  <numberOfCpus>2</numberOfCpus>
+  <numberOfThreads>1</numberOfThreads>
+  <osArchitecture>x86</osArchitecture>
+  <osName>Windows XP</osName>
+  <plotDrivers>false</plotDrivers>
+  <plotGroupSize>5</plotGroupSize>
+  <reportsDirectory>reports</reportsDirectory>
+  <resultAxis>normal</resultAxis>
+  <resultAxisX>normal</resultAxisX>
+  <resultUnit>ms</resultUnit>
+  <runIterations>10000000</runIterations>
+  <runsPerDriver>1</runsPerDriver>
+  <version>1.1.0</version>
+  <vmInfo>Sun Microsystems Inc. 11.2-b01</vmInfo>
+  <warmupIterations>20000</warmupIterations>
+  <warmupsPerDriver>0</warmupsPerDriver>
+  <driver name="hashCodeJAU">
+    <driverClass>com.googlecode.jau.HashCodeJAUPerfTest_</driverClass>
+    <resultAritMean>0.002</resultAritMean>
+    <resultGeomMean>0.002</resultGeomMean>
+    <resultHarmMean>0.002</resultHarmMean>
+    <description xmlns="">JAU.equals() performance</description>
+    <testCase name="hashCode">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>15.986</resultTime>
+      <resultValue>0.002</resultValue>
+    </testCase>
+  </driver>
+  <driver name="hashCodeManual">
+    <driverClass>com.googlecode.jau.HashCodeManualPerfTest_</driverClass>
+    <resultAritMean>0.000</resultAritMean>
+    <resultGeomMean>0.000</resultGeomMean>
+    <resultHarmMean>0.000</resultHarmMean>
+    <description xmlns="">Manually implemented equals() performance</description>
+    <testCase name="hashCode">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>0.469</resultTime>
+      <resultValue>0.000</resultValue>
+    </testCase>
+  </driver>
+</testSuiteReport>
