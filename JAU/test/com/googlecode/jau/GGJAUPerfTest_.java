@@ -12,7 +12,6 @@ public class GGJAUPerfTest_ extends JapexDriverBase {
     private static RealClass v = new RealClass();
 
     public void run(TestCase testCase) {
-        for (int i = 0; i < 1000; i++)
-            JAU.toString(v);
+        JAU.toString(v);
     }
 }

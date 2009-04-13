@@ -49,7 +49,6 @@ public class EqualsJAUIntPerfTest_ extends JapexDriverBase {
     }
 
     public void run(TestCase testCase) {
-        for (int i = 0; i < 1000; i++)
-            result = JAU.equals(first, second);
+        result = JAU.equals(first, second);
     }
 }

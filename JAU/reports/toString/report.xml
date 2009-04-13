@@ -1,0 +1,48 @@
+<testSuiteReport name="JAUPerformance" xmlns="http://www.sun.com/japex/testSuiteReport">
+  <chartType>barchart</chartType>
+  <classPath>build/classes
+build/test/classes</classPath>
+  <configFile>perf-config-tostring.xml</configFile>
+  <dateTime>13 Apr 2009/20:07:03 CEST</dateTime>
+  <hostName>timpc2</hostName>
+  <numberOfCpus>2</numberOfCpus>
+  <numberOfThreads>1</numberOfThreads>
+  <osArchitecture>x86</osArchitecture>
+  <osName>Windows XP</osName>
+  <plotDrivers>false</plotDrivers>
+  <plotGroupSize>5</plotGroupSize>
+  <reportsDirectory>reports</reportsDirectory>
+  <resultAxis>normal</resultAxis>
+  <resultAxisX>normal</resultAxisX>
+  <resultUnit>ms</resultUnit>
+  <runIterations>10000000</runIterations>
+  <runsPerDriver>1</runsPerDriver>
+  <version>1.1.0</version>
+  <vmInfo>Sun Microsystems Inc. 11.2-b01</vmInfo>
+  <warmupIterations>20000</warmupIterations>
+  <warmupsPerDriver>0</warmupsPerDriver>
+  <driver name="toStringJAU">
+    <driverClass>com.googlecode.jau.GGJAUPerfTest_</driverClass>
+    <resultAritMean>0.005</resultAritMean>
+    <resultGeomMean>0.005</resultGeomMean>
+    <resultHarmMean>0.005</resultHarmMean>
+    <description xmlns="">JAU.toString() performance</description>
+    <testCase name="toString">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>47.572</resultTime>
+      <resultValue>0.005</resultValue>
+    </testCase>
+  </driver>
+  <driver name="toStringManual">
+    <driverClass>com.googlecode.jau.GGManualPerfTest_</driverClass>
+    <resultAritMean>0.003</resultAritMean>
+    <resultGeomMean>0.003</resultGeomMean>
+    <resultHarmMean>0.003</resultHarmMean>
+    <description xmlns="">Manually implemented toString() performance</description>
+    <testCase name="toString">
+      <resultIterations>10000000.000</resultIterations>
+      <resultTime>34.684</resultTime>
+      <resultValue>0.003</resultValue>
+    </testCase>
+  </driver>
+</testSuiteReport>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns:extrep="http://www.sun.com/japex/extendedTestSuiteReport" xmlns:suite="http://www.sun.com/japex/testSuite" xmlns:rep="http://www.sun.com/japex/testSuiteReport" xmlns="http://www.w3.org/1999/xhtml">
+<link href="report.css" type="text/css" rel="stylesheet"/>
+<body>
+<table border="0" cellpadding="2">
+<tr>
+<td valign="middle" width="90">
+<p>
+<a href="https://japex.dev.java.net">
+<img src="small_japex.gif" align="middle" border="0"/>
+</a>
+</p>
+</td>
+<td valign="middle">
+<h1>Japex Report: JAUPerformance</h1>
+</td>
+</tr>
+</table>
+<h2>Global Parameters</h2>
+<ul>
+<li>configFile: <a href="perf-config-hashcode.xml">perf-config-hashcode.xml</a>
+</li>
+<li>chartType: barchart</li>
+<li>classPath: build/classes
+build/test/classes</li>
+<li>dateTime: 13 Apr 2009/20:27:01 CEST</li>
+<li>hostName: timpc2</li>
+<li>numberOfCpus: 2</li>
+<li>numberOfThreads: 1</li>
+<li>osArchitecture: x86</li>
+<li>osName: Windows XP</li>
+<li>plotDrivers: false</li>
+<li>plotGroupSize: 5</li>
+<li>reportsDirectory: reports</li>
+<li>resultAxis: normal</li>
+<li>resultAxisX: normal</li>
+<li>resultUnit: ms</li>
+<li>runIterations: 10000000</li>
+<li>runsPerDriver: 1</li>
+<li>version: 1.1.0</li>
+<li>vmInfo: Sun Microsystems Inc. 11.2-b01</li>
+<li>warmupIterations: 20000</li>
+<li>warmupsPerDriver: 0</li>
+</ul>
+<h2>Result Summary 
+        (ms)</h2>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th width="15%">
+<b>driver</b>
+</th>
+<th>
+<b>resultAritMean</b>
+</th>
+<th>
+<b>resultGeomMean</b>
+</th>
+<th>
+<b>resultHarmMean</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">hashCodeJAU</td>
+<td align="right">
+<nobr>0.002</nobr>
+</td>
+<td align="right">
+<nobr>0.002</nobr>
+</td>
+<td align="right">
+<nobr>0.002</nobr>
+</td>
+</tr>
+<tr>
+<td align="right">hashCodeManual</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<br/>
+<center>
+<img src="result.jpg"/>
+</center>
+<br/>
+<br/>
+<h2>Driver: hashCodeJAU</h2>
+<p>
+<ul>
+<li>driverClass: com.googlecode.jau.HashCodeJAUPerfTest_</li>
+<li>description: JAU.equals() performance</li>
+</ul>
+</p>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th>
+<b>testCase</b>
+</th>
+<th>
+<b>resultIterations</b>
+</th>
+<th>
+<b>resultTime</b>
+</th>
+<th>
+<b>resultValue</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">hashCode</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>15.986</nobr>
+</td>
+<td align="right">
+<nobr>0.002</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<h2>Driver: hashCodeManual</h2>
+<p>
+<ul>
+<li>driverClass: com.googlecode.jau.HashCodeManualPerfTest_</li>
+<li>description: Manually implemented equals() performance</li>
+</ul>
+</p>
+<table width="80%" border="1">
+<thead>
+<tr>
+<th>
+<b>testCase</b>
+</th>
+<th>
+<b>resultIterations</b>
+</th>
+<th>
+<b>resultTime</b>
+</th>
+<th>
+<b>resultValue</b>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">hashCode</td>
+<td align="right">
+<nobr>10000000.000</nobr>
+</td>
+<td align="right">
+<nobr>0.469</nobr>
+</td>
+<td align="right">
+<nobr>0.000</nobr>
+</td>
+</tr>
+</tbody>
+</table>
+<br/>
+<h2>Results Per Test</h2>
+<br/>
+<center>
+<img src="testcase0.jpg"/>
+</center>
+<br/>
+<br/>
+<br/>
+<small>
+<hr/>
+<font size="-2">
+                        Generated using <a href="https://japex.dev.java.net">Japex</a> version 
+                        1.1.0</font>
+</small>
+</body>
+</html>
