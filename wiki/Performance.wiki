@@ -6,5 +6,20 @@ Currently the library uses Java reflection API. That's why the current implement
 
 = Details =
 
-Performance of .equals():
-TODO
+Performance reports:
+
+equals():
+http://jau.googlecode.com/svn/trunk/JAU/reports/equals/index.html
+
+toString():
+http://jau.googlecode.com/svn/trunk/JAU/reports/equalsBigString/index.html
+
+equals():
+http://jau.googlecode.com/svn/trunk/JAU/reports/equalsInt/index.html
+
+hashCode():
+http://jau.googlecode.com/svn/trunk/JAU/reports/hashCode/index.html
+
+toString():
+http://jau.googlecode.com/svn/trunk/JAU/reports/toString/index.html
+
