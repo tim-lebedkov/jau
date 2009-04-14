@@ -32,3 +32,8 @@ toString() for RealClass:
   * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/RealClass.java
   * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/ToStringPerfTest_.java
   * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/toString/index.html
+
+= Conclusions =
+  * for "small" field types (byte, int, float) performance of equals()/hashCode() implemented with JAU depends heavily on the number of fields and is much worse than in manually implemented methods
+  * for an object with one String field the value of the field must be of length 500 of higher for JAU overhead to become neglectable 
+  * toString() performance of JAU is really good even for classes with many small fields
