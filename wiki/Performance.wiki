@@ -9,21 +9,26 @@ Currently the library uses Java reflection API. That's why the current implement
 Performance reports:
 
 equals():
+
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUPerfTest_.java
 http://jau.googlecode.com/svn/trunk/JAU/reports/equals/index.html
 
 equals():
+
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUStringPerfTest_.java
 http://jau.googlecode.com/svn/trunk/JAU/reports/equalsBigString/index.html
 
 equals():
+
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUIntPerfTest_.java
 http://jau.googlecode.com/svn/trunk/JAU/reports/equalsInt/index.html
 
 hashCode():
+
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/HashCodeJAUPerfTest_.java
 http://jau.googlecode.com/svn/trunk/JAU/reports/hashCode/index.html
 
 toString():
+
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/ToStringPerfTest_.java
 http://jau.googlecode.com/svn/trunk/JAU/reports/toString/index.html
