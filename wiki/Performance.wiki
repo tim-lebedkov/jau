@@ -16,15 +16,11 @@ http://jau.googlecode.com/svn/trunk/JAU/reports/equals/index.html
 equals() for classes with different number of int fields:
 
 Sample: 
-
 http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/IntFields32.java
 
-Test: 
-
-http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUStringPerfTest_.java
+Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUStringPerfTest_.java
 
 Results: 
-
 http://jau.googlecode.com/svn/trunk/JAU/reports/equalsBigString/index.html
 
 equals():
