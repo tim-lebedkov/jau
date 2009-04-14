@@ -8,31 +8,27 @@ Currently the library uses Java reflection API. That's why the current implement
 
 Performance reports:
 
-equals():
+equals() for RealClass:
+  * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/RealClass.java
+  * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUPerfTest_.java
+  * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/equals/index.html
 
-* Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUPerfTest_.java
-* Results: http://jau.googlecode.com/svn/trunk/JAU/reports/equals/index.html
+equals() for a class with one String field (different string lengths):
+  * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/BigString.java
+  * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUStringPerfTest_.java
+  * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/equalsBigString/index.html
 
 equals() for classes with different number of int fields:
+  * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/IntFields32.java
+  * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUIntPerfTest_.java
+  * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/equalsInt/index.html
 
-* Sample: 
-http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/IntFields32.java
-* Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUStringPerfTest_.java
-* Results: 
-http://jau.googlecode.com/svn/trunk/JAU/reports/equalsBigString/index.html
+hashCode() for RealClass:
+  * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/RealClass.java
+  * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/HashCodeJAUPerfTest_.java
+  * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/hashCode/index.html
 
-equals():
-
-* Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/EqualsJAUIntPerfTest_.java
-* Results: http://jau.googlecode.com/svn/trunk/JAU/reports/equalsInt/index.html
-
-hashCode():
-
-* Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/HashCodeJAUPerfTest_.java
-* Results: http://jau.googlecode.com/svn/trunk/JAU/reports/hashCode/index.html
-
-toString():
-
-* Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/ToStringPerfTest_.java
-* Results: http://jau.googlecode.com/svn/trunk/JAU/reports/toString/index.html
-
+toString() for RealClass:
+  * Class: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/RealClass.java
+  * Test: http://code.google.com/p/jau/source/browse/trunk/JAU/test/com/googlecode/jau/ToStringPerfTest_.java
+  * Results: http://jau.googlecode.com/svn/trunk/JAU/reports/toString/index.html
